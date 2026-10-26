@@ -2,7 +2,7 @@
 
 window.BOOKCLUB_CONFIG = {
   // Name shown in the header and browser tab
-  clubName: "Bollington Book Club",
+  clubName: "Bollington Feminist Book Club",
 
   // Read-only Baserow database token.
   // Create it in Baserow: Settings → Database tokens → Create token.

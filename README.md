@@ -1,4 +1,4 @@
-# Bollington Book Club
+# Bollington Feminist Book Club
 
 A swap shelf, not a reading list. This is the public site for the club: a catalogue of books members are sharing, with buttons to borrow, rate and join.
 
