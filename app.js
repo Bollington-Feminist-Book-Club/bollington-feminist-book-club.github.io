@@ -161,9 +161,11 @@
       "★".repeat(full) + `<span>${"★".repeat(5 - full)}</span></span>`;
   }
 
-  function coverHtml(b, eager) {
-    const img = b.cover
-      ? `<img src="${esc(b.cover)}" alt="" ${eager ? "" : 'loading="lazy"'} onerror="this.remove()">`
+  // size "M" for thumbnails, "L" for the book panel – Open Library's large covers are slow
+  function coverHtml(b, eager, size = "M") {
+    const src = (b.cover || "").replace(/(covers\.openlibrary\.org\/b\/isbn\/[0-9X]+)-[SML]\.jpg/, `$1-${size}.jpg`);
+    const img = src
+      ? `<img src="${esc(src)}" alt="" decoding="async" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} onload="this.classList.add('is-loaded')" onerror="this.remove()">`
       : "";
     return `<div class="cover"><span class="cover__fallback">${esc(b.title)}</span>${img}</div>`;
   }
@@ -226,7 +228,7 @@
     // Newest sits in the middle, on top
     const order = newest.length === 3 ? [newest[1], newest[0], newest[2]] : newest;
     $("#hero-stack").innerHTML = order.map((b) =>
-      `<button type="button" data-open="${b.id}" aria-label="${esc(b.title)}">${coverHtml(b, true)}</button>`).join("");
+      `<button type="button" data-open="${b.id}" aria-label="${esc(b.title)}">${coverHtml(b, true, "L")}</button>`).join("");
   }
 
   function renderWishlist(rows) {
@@ -274,7 +276,7 @@
       : "";
 
     $("#d-body").innerHTML = `
-      <div>${coverHtml(b, true)}</div>
+      <div>${coverHtml(b, true, "L")}</div>
       <div>
         <div class="tags">${b.genres.map((g) => `<span class="tag">${esc(g)}</span>`).join("")}</div>
         <h2 id="d-title">${esc(b.title)}</h2>
@@ -427,7 +429,6 @@
     const ed = await getJson(`https://openlibrary.org/isbn/${isbn}.json`);
     if (!ed) return null;
     const out = { title: ed.title || "", pages: ed.number_of_pages || null, authors: [], synopsis: "", language: "" };
-    if (ed.subtitle) out.title += `: ${ed.subtitle}`;
     const langKey = ((ed.languages || [])[0] || {}).key;
     if (langKey) out.language = LANGS[langKey.split("/").pop()] || langKey.split("/").pop();
     const workKey = ((ed.works || [])[0] || {}).key;
@@ -450,7 +451,7 @@
     tmp.innerHTML = v.description || "";
     const img = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
     return {
-      title: [v.title, v.subtitle].filter(Boolean).join(": "),
+      title: v.title || "",
       authors: v.authors || [],
       pages: v.pageCount || null,
       synopsis: tmp.textContent.trim(),
