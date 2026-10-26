@@ -68,7 +68,8 @@ p { margin: 0 0 1em; }
 .theme-toggle:hover { color: var(--brand); }
 @media (max-width: 560px) {
   .header__inner { padding-top: 24px; padding-bottom: 24px; }
-  .logo { font-size: 21px; }
+  .logo { display: none; }
+  .header__inner { justify-content: flex-end; }
   .nav { gap: 14px; font-size: 16px; }
 }
 
@@ -186,6 +187,13 @@ p { margin: 0 0 1em; }
 .readers .avatar { width: 52px; height: 52px; font-size: 21px; }
 .readers strong { display: block; font-family: var(--serif); font-size: 19px; line-height: 1.3; }
 .readers span.n { font-size: 15px; color: var(--muted); }
+
+/* About */
+.about__lead { font-family: var(--serif); font-size: clamp(20px, 2.4vw, 25px); line-height: 1.55; max-width: 860px; margin-bottom: 40px; }
+.about__cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+.about__cols h3 { font-size: 21px; margin-bottom: 8px; }
+.about__cols p { color: var(--text-alt); font-size: 17px; margin: 0; }
+@media (max-width: 860px) { .about__cols { grid-template-columns: 1fr; gap: 28px; } }
 
 /* Join */
 .join { background: var(--bg-alt); padding: 72px 0; text-align: center; }
