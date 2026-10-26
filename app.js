@@ -226,12 +226,12 @@
   function renderWishlist(rows) {
     const el = $("#wish-items");
     const items = rows
-      .filter((r) => (r["Recommendation"] || "").trim())
+      .filter((r) => (r["Book title"] || "").trim())
       .sort((a, b) => b.id - a.id)
       .map((r) => {
-        const by = values(r["Member"]);
+        const by = values(r["Recommended by"]);
         return `<li>
-          <h3>${esc(r["Recommendation"])}</h3>
+          <h3>${esc(r["Book title"])}</h3>
           ${r["Author"] ? `<p class="wish__author">${esc(r["Author"])}</p>` : ""}
           ${r["Why read it"] ? `<p class="wish__why">${esc(r["Why read it"])}</p>` : ""}
           ${by.length ? `<p class="wish__by">Recommended by ${esc(by.join(", "))}</p>` : ""}
