@@ -78,7 +78,11 @@
     const loans = values(r["Borrowing Statuses"]);
     const manual = single(r["Status"]);
     let status = "available";
-    if (loans.includes("Borrowed") || manual === "Borrowed") status = "out";
+    const avail = single(r["Availability"]);
+    if (avail) {
+      // Worked out in Baserow from the Borrowings table
+      status = avail === "On loan" ? "out" : avail === "Requested" ? "requested" : "available";
+    } else if (loans.includes("Borrowed") || manual === "Borrowed") status = "out";
     else if (loans.includes("Requested")) status = "requested";
 
     const cover = (r["Cover photo"] || []).find((f) => f.is_image !== false);
