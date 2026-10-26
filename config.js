@@ -20,7 +20,7 @@ window.BOOKCLUB_CONFIG = {
 
   // Public form links from Baserow (open each form view → Share view → copy link)
   forms: {
-    join: "https://baserow.io/form/Bv6eH2XTbjC3VP0QkLFk-2PkM3GDyM-5jovU6JBR59s",
+    join: "https://baserow.io/form/JyFUBO4jZHg4ZRWKvltvtUQUDOVVJJuRBy9dVzPpQL0",
     borrow: "https://baserow.io/form/gHe7Gcha10zhemrbIKBeduWc_j2YxGuARvsgTBEIK60",   // "Borrow a book" form on the Borrowings table
     rate: "https://baserow.io/form/764QzvI0Qz1ynRflAkxudQ4BCkgGOml6EKSV33AxVVc",     // "Give us your rating" form on the Ratings table
     addBook: "https://baserow.io/form/lEeCRjZM13T-OJZUUpuSSKMGB9xYcwTMdwpJZ_3mB08",   // "Add a New Book" form on the Catalogue table
