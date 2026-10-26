@@ -23,7 +23,7 @@ window.BOOKCLUB_CONFIG = {
     join: "https://baserow.io/form/JyFUBO4jZHg4ZRWKvltvtUQUDOVVJJuRBy9dVzPpQL0",
     borrow: "https://baserow.io/form/gHe7Gcha10zhemrbIKBeduWc_j2YxGuARvsgTBEIK60",   // "Borrow a book" form on the Borrowings table
     rate: "https://baserow.io/form/764QzvI0Qz1ynRflAkxudQ4BCkgGOml6EKSV33AxVVc",     // "Give us your rating" form on the Ratings table
-    addBook: "https://baserow.io/form/lEeCRjZM13T-OJZUUpuSSKMGB9xYcwTMdwpJZ_3mB08",   // "Add a New Book" form on the Catalogue table
+    addBook: "https://baserow.io/form/r3v9aYSIoAn2BdzLVh3LxHRwXobew6dmpynDxGu412s",   // "Add a New Book" form on the Catalogue table
     recommend: "https://baserow.io/form/yESotg2NnBv3CHrNF9P1DavI3y7I-ybZ8j5lOX0__-E"  // "Recommend a book" form on the Wish list table
   }
 };
