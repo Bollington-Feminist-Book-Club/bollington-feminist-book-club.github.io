@@ -25,7 +25,7 @@ The site only ever **reads** from Baserow. Anything that adds or changes data �
 
 - **Catalogue and wish list** are read with a read-only database token.
 - **Members** are read from a publicly shared Baserow view that shows only safe fields. Emails and phone numbers never reach the site.
-- **Forms** are opened in a new tab. Borrow and Rate pre-fill the book; Add a book pre-fills everything the ISBN lookup found.
+- **Forms** are opened in a new tab. Borrow and Rate pre-fill the book; Adding a book happens on our own page and is submitted directly to the Baserow form.
 
 ### Approvals
 
@@ -44,9 +44,12 @@ Members choose a username when they join. It's the Members table's first column,
 1. **Open Library** (openlibrary.org), first for title, author, pages, language and cover.
 2. **Google Books**, to fill anything Open Library lacks. The longer of the two synopses is used.
 
-The member sees a preview, then chooses **I own it** (opens the Add a book form) or **I want to read it** (opens the Recommend a book form). They add their username, format and genres themselves.
+The member sees a preview, then chooses:
 
-A form can't receive an uploaded image, so the cover is saved as a web address in the Catalogue's *Cover URL* field. The site shows covers in this order: an uploaded *Cover photo*, then *Cover URL*, then the Open Library cover for the book's *ISBN*. If none exists, a plain card with the title is shown.
+- **I own it** – a form appears on our own page, built from the Baserow *Add a book* form (its questions, genres and usernames are read from Baserow, so changes there show up automatically). Everything the lookup found is filled in, including the full synopsis. The member picks format, genres and username and presses *Add to the shelves*; the page submits straight to the Baserow form. Nothing goes through a long link, which is what used to trigger Baserow's firewall (HTTP 403).
+- **I want to read it** – opens the Recommend a book form with title and author filled in.
+
+The cover is saved as a web address in the Catalogue's *Cover URL* field (forms can't receive an uploaded image this way). The site shows covers in this order: an uploaded *Cover photo*, then *Cover URL*, then the Open Library cover for the book's *ISBN*. If none exists, a plain card with the title is shown. If a book has no synopsis saved, its panel on the site fetches one by ISBN.
 
 ## Settings (`config.js`)
 
