@@ -248,10 +248,12 @@
         const name = r["Username"].trim();
         const photo = (r["Profile photo"] || []).find((f) => f.is_image !== false);
         const since = monthYear(r["Joined Date"]);
+        const shared = Array.isArray(r["Catalogue"]) ? r["Catalogue"].length : 0;
         return `<li>
           <div class="member__photo">${photo ? `<img src="${esc(photo.url)}" alt="" loading="lazy">` : initial(name)}</div>
           <strong>${esc(name)}</strong>
           ${since ? `<span>Member since ${esc(since)}</span>` : ""}
+          ${shared ? `<span class="member__shared">${shared} ${shared === 1 ? "book" : "books"} shared</span>` : ""}
         </li>`;
       });
     $("#members-list").innerHTML = items.join("");

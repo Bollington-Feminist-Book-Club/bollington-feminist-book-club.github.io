@@ -16,7 +16,7 @@ window.BOOKCLUB_CONFIG = {
 
   // Public link to the "Public members" view in Baserow (Share view → copy link).
   // Hide every field in that view except Username, Profile photo and Joined Date first.
-  membersViewLink: "",
+  membersViewLink: "https://baserow.io/public/grid/2Hx161pnPxp32vF-IbZgPhN4l9SZvQcM54DQ8YXEkpE",
 
   // Public form links from Baserow (open each form view → Share view → copy link)
   forms: {
