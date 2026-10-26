@@ -1,0 +1,153 @@
+{
+ "results": [
+  {
+   "id": 1,
+   "Book title": "Violeta",
+   "Synopsis": "Violeta by Isabel Allende is a 100-year epic (1920–2020) told as a letter from an elderly woman named Violeta Del Valle to her grandson, Camilo. Born into a wealthy South American family during the Spanish flu and ending during the 2020 pandemic, Violeta survives the Great Depression, political turmoil, abusive relationships and heartbreak to become an independent business owner.",
+   "Cover photo": [
+    {
+     "url": "https://baserow-backend-production20240528124524339000000001.s3.amazonaws.com/user_files/Mm4yZrZyNsUJqltOAiMTccmpMgXWL149_65028df2ba5d6e38608cc22c1ea9d72074f20efa056cc1368d288c2ddd783130.jpg",
+     "is_image": true
+    }
+   ],
+   "Format": {
+    "value": "Paperback"
+   },
+   "Status": {
+    "value": "Available"
+   },
+   "Language": {
+    "value": "Spanish"
+   },
+   "Pages": "336",
+   "Author(s)": [
+    {
+     "value": "Isabel Allende"
+    }
+   ],
+   "Average Score": "5",
+   "Rating Scores": [
+    {
+     "value": "5"
+    }
+   ],
+   "Borrowing Statuses": [],
+   "Genre": [
+    {
+     "value": "Historical fiction"
+    },
+    {
+     "value": "Contemporary fiction"
+    },
+    {
+     "value": "Intersectional"
+    },
+    {
+     "value": "Queer"
+    }
+   ],
+   "Owner": [
+    {
+     "value": "Xenia"
+    }
+   ]
+  },
+  {
+   "id": 67,
+   "Book title": "Americanah",
+   "Synopsis": "As teenagers in Lagos, Ifemelu and Obinze fall in love. Their Nigeria is under military dictatorship, and people are fleeing the country if they can.\n\nThe self-assured Ifemelu departs for America, while Obinze plunges into a dangerous, undocumented life in London. Thirteen years later, will they find the courage to meet again?",
+   "Cover photo": [
+    {
+     "url": "https://baserow-backend-production20240528124524339000000001.s3.amazonaws.com/user_files/1IQbBV2SfSCrgtGfgcZA1ic2xtb4AfNC_b8a1612b0f2ecd03217cdd5c92dbfd52a4a8c114ae9306ab120e4ea007e89c9a.webp",
+     "is_image": true
+    }
+   ],
+   "Format": {
+    "value": "Paperback"
+   },
+   "Status": {
+    "value": "Available"
+   },
+   "Language": {
+    "value": "English"
+   },
+   "Pages": "608",
+   "Author(s)": [
+    {
+     "value": "Chimamanda Ngozi Adichie"
+    }
+   ],
+   "Average Score": null,
+   "Rating Scores": [],
+   "Borrowing Statuses": [],
+   "Genre": [
+    {
+     "value": "Social satire"
+    },
+    {
+     "value": "Contemporary fiction"
+    },
+    {
+     "value": "Intersectional"
+    },
+    {
+     "value": "Global Perspectives"
+    }
+   ],
+   "Owner": [
+    {
+     "value": "Xenia"
+    }
+   ]
+  },
+  {
+   "id": 70,
+   "Book title": "We should all be feminists",
+   "Synopsis": "A book-length essay offering a 21st-century definition of feminism.\n\n**Core themes:**\n\n- **Socialisation:** how boys are taught to hide vulnerability and girls to shrink their ambitions.\n- **Redefining masculinity:** the pressure on men to prove power.\n- **Inclusivity:** feminism as a collective effort rather than a niche interest.",
+   "Cover photo": [
+    {
+     "url": "https://baserow-backend-production20240528124524339000000001.s3.amazonaws.com/user_files/QR4bUPlfCvichMP7FvQyuj9h24WajdBl_25662aa862a2b4316f88e886a41b0a71b340aecb4952737cfe5cc02f91b703c0.webp",
+     "is_image": true
+    }
+   ],
+   "Format": {
+    "value": "Paperback"
+   },
+   "Status": {
+    "value": "Borrowed"
+   },
+   "Language": {
+    "value": "English"
+   },
+   "Pages": "46",
+   "Author(s)": [
+    {
+     "value": "Chimamanda Ngozi Adichie"
+    }
+   ],
+   "Average Score": null,
+   "Rating Scores": [],
+   "Borrowing Statuses": [
+    {
+     "value": "Borrowed"
+    }
+   ],
+   "Genre": [
+    {
+     "value": "Manifesto"
+    },
+    {
+     "value": "Social sciences"
+    },
+    {
+     "value": "Global Perspectives"
+    }
+   ],
+   "Owner": [
+    {
+     "value": "Xenia"
+    }
+   ]
+  }
+ ]
+}
