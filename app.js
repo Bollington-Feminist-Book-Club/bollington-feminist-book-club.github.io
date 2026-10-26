@@ -95,9 +95,8 @@
       format: single(r["Format"]),
       language: single(r["Language"]).replace(/^_not listed$/, ""),
       pages: r["Pages"] ? Number(r["Pages"]) : null,
-      authors: (r["Author"] || "").trim()
-        ? r["Author"].split(",").map((s) => s.trim()).filter(Boolean)
-        : values(r["Author(s)"]),
+      authors: String(r["Author"] || r["Suggested Author"] || "")
+        .split(",").map((s) => s.trim()).filter(Boolean),
       genres: values(r["Genre"]),
       owners: values(r["Owner"]),
       rating: avg,
@@ -503,7 +502,8 @@
       const dup = state.books.find((b) => b.isbn === isbn || b.title.toLowerCase() === book.title.toLowerCase());
       const langListed = knownLangs.includes(book.language);
       const shelf = { "ISBN": isbn, "Book title": book.title };
-      if (book.authors.length) shelf["Author"] = book.authors.join(", ");
+      // The form's Author question may point at either field; fill both, Baserow ignores the one not on the form
+      if (book.authors.length) shelf["Author"] = shelf["Suggested Author"] = book.authors.join(", ");
       if (book.synopsis) shelf["Synopsis"] = book.synopsis.slice(0, 1800);
       if (book.pages) shelf["Pages"] = book.pages;
       if (book.language) { if (langListed) shelf["Language"] = book.language; else shelf["Suggested Language"] = book.language; }
