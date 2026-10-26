@@ -8,7 +8,7 @@ window.BOOKCLUB_CONFIG = {
   // Create it in Baserow: Settings → Database tokens → Create token.
   // Give it READ access to the Catalogue table only – no create, update or delete.
   // Leave empty to preview the site with sample data.
-  baserowToken: "",
+  baserowToken: "eVc6EMIE0sW3fj3IJUWVt4yCaMswONK7",
 
   baserowApi: "https://api.baserow.io",
   catalogueTableId: 938797,
