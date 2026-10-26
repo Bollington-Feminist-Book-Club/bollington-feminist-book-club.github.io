@@ -282,7 +282,7 @@
         <h2 id="d-title">${esc(b.title)}</h2>
         <p class="featured__author">${esc(b.authors.join(", "))}</p>
         <p class="dialog__facts">${esc(facts)}${ratingLine ? `<br>${ratingLine}` : ""}</p>
-        <div class="dialog__synopsis">${renderMarkdown(b.synopsis) || "<p>No synopsis yet.</p>"}</div>
+        <div class="dialog__synopsis" id="d-synopsis">${renderMarkdown(b.synopsis) || (b.isbn ? '<p class="muted-line">Fetching the synopsis…</p>' : "<p>No synopsis yet.</p>")}</div>
         ${b.owners[0] ? `<div class="meta"><span class="avatar">${initial(b.owners[0])}</span>
           <span><strong>Shared by ${esc(b.owners.join(", "))}</strong>${status(b)}</span></div>` : ""}
         <div class="dialog__actions">
@@ -295,6 +295,19 @@
     wireFormLink($('[data-dialog-form="borrow"]'), "borrow", { Books: b.title });
     wireFormLink($('[data-dialog-form="rate"]'), "rate", { Book: b.title });
     wireFormLink($('[data-dialog-form="join"]'), "join");
+
+    if (!b.synopsis && b.isbn) {
+      fetchSynopsis(b.isbn).then((text) => {
+        const el = $("#d-synopsis");
+        if (!el || !$("#book-dialog").open) return;
+        if (text) {
+          b.synopsis = text;
+          el.innerHTML = renderMarkdown(text) + `<p class="dialog__hint">Synopsis from Open Library or Google Books.</p>`;
+        } else {
+          el.innerHTML = "<p>No synopsis yet.</p>";
+        }
+      });
+    }
 
     const dlg = $("#book-dialog");
     if (!dlg.open) dlg.showModal();
@@ -502,6 +515,18 @@
     return (out.trim() || text.slice(0, text.lastIndexOf(" ", max)) + "...");
   }
 
+  const synopsisCache = {};
+  async function fetchSynopsis(isbn) {
+    if (isbn in synopsisCache) return synopsisCache[isbn];
+    const [g, ol] = await Promise.all([fromGoogle(isbn), fromOpenLibrary(isbn)]);
+    const pick = [g && g.synopsis, ol && ol.synopsis].filter(Boolean).sort((x, y) => y.length - x.length)[0] || "";
+    // Publisher blurbs often end with award lists and review quotes; cut from the first of those
+    const cut = pick.search(/\n\s*(A Book of the Year|Winner of|Shortlisted|Longlisted|'[^'\n]{3,}'\s*\n|"[^"\n]{3,}"\s*\n|\u2018|\u201C)/);
+    const text = (cut > 200 ? pick.slice(0, cut) : pick).trim();
+    synopsisCache[isbn] = text;
+    return text;
+  }
+
   function bindAddPage() {
     const formEl = $("#isbn-form");
     if (!formEl) return;
@@ -531,7 +556,7 @@
       const shelf = { "ISBN": isbn, "Book title": plainText(book.title) };
       // The form's Author question may point at either field; fill both, Baserow ignores the one not on the form
       if (book.authors.length) shelf["Author"] = shelf["Suggested Author"] = plainText(book.authors.join(", "));
-      if (book.synopsis) shelf["Synopsis"] = shortSynopsis(book.synopsis);
+      // Synopsis is not sent: Baserow's firewall blocks some text in links. The site fetches it by ISBN instead.
       if (book.pages) shelf["Pages"] = book.pages;
       if (book.language) { if (langListed) shelf["Language"] = book.language; else shelf["Suggested Language"] = book.language; }
       if (book.cover) shelf["Cover URL"] = book.cover;
