@@ -518,16 +518,166 @@
     return (out.trim() || text.slice(0, text.lastIndexOf(" ", max)) + "...");
   }
 
+  // Publisher blurbs often end with award lists and review quotes; cut from the first of those
+  function trimBlurbs(s) {
+    const pick = String(s || "");
+    const cut = pick.search(/\n\s*(A Book of the Year|Winner of|Shortlisted|Longlisted|'[^'\n]{3,}'\s*\n|"[^"\n]{3,}"\s*\n|\u2018|\u201C)/);
+    return (cut > 200 ? pick.slice(0, cut) : pick).trim();
+  }
+
   const synopsisCache = {};
   async function fetchSynopsis(isbn) {
     if (isbn in synopsisCache) return synopsisCache[isbn];
     const [g, ol] = await Promise.all([fromGoogle(isbn), fromOpenLibrary(isbn)]);
     const pick = [g && g.synopsis, ol && ol.synopsis].filter(Boolean).sort((x, y) => y.length - x.length)[0] || "";
-    // Publisher blurbs often end with award lists and review quotes; cut from the first of those
-    const cut = pick.search(/\n\s*(A Book of the Year|Winner of|Shortlisted|Longlisted|'[^'\n]{3,}'\s*\n|"[^"\n]{3,}"\s*\n|\u2018|\u201C)/);
-    const text = (cut > 200 ? pick.slice(0, cut) : pick).trim();
+    const text = trimBlurbs(pick);
     synopsisCache[isbn] = text;
     return text;
+  }
+
+
+  /* ---------- on-page "add to the shelves" form, submitted straight to the Baserow form ---------- */
+
+  const formSlug = (url) => (String(url || "").match(/\/form\/([^/?#]+)/) || [])[1];
+  let formMetaPromise = null;
+
+  function loadFormMeta() {
+    const slug = formSlug(forms.addBook);
+    if (!slug) return Promise.reject(new Error("No add-book form configured"));
+    if (!formMetaPromise) {
+      formMetaPromise = (async () => {
+        const res = await fetch(`${api()}/api/database/views/form/${slug}/submit/`);
+        if (!res.ok) throw new Error(`Form returned ${res.status}`);
+        const meta = await res.json();
+        // Options for link fields (usernames) come from a separate public lookup
+        await Promise.all(meta.fields.filter((f) => f.field.type === "link_row").map(async (f) => {
+          const r = await fetch(`${api()}/api/database/views/${slug}/link-row-field-lookup/${f.field.id}/?size=200`);
+          f.rows = r.ok ? (await r.json()).results : [];
+        }));
+        return { slug, meta };
+      })().catch((e) => { formMetaPromise = null; throw e; });
+    }
+    return formMetaPromise;
+  }
+
+  const SKIP_TYPES = ["file"];
+  const HIDDEN_FIELDS = ["Cover URL"];
+
+  function fieldHtml(f, value) {
+    const id = `f-${f.field.id}`;
+    const type = f.field.type;
+    const req = f.required ? "required" : "";
+    const star = f.required ? ' <span class="req" aria-hidden="true">*</span>' : "";
+    const desc = f.description ? `<span class="sf__desc">${esc(f.description)}</span>` : "";
+    const label = `<label for="${id}">${esc(f.name)}${star}</label>${desc}`;
+    const v = value == null ? "" : value;
+
+    if (HIDDEN_FIELDS.includes(f.field.name)) return `<input type="hidden" id="${id}" value="${esc(v)}">`;
+    if (type === "long_text") return `<div class="sf__row">${label}<textarea id="${id}" rows="7" ${req}>${esc(v)}</textarea></div>`;
+    if (type === "number") return `<div class="sf__row sf__row--short">${label}<input id="${id}" type="number" min="0" value="${esc(v)}" ${req}></div>`;
+    if (type === "single_select") {
+      const opts = f.field.select_options.map((o) =>
+        `<option value="${o.id}" ${String(o.value).toLowerCase() === String(v).toLowerCase() ? "selected" : ""}>${esc(o.value.replace(/^_/, ""))}</option>`).join("");
+      return `<div class="sf__row sf__row--short">${label}<select id="${id}" ${req}><option value="">Choose…</option>${opts}</select></div>`;
+    }
+    if (type === "multiple_select") {
+      const boxes = f.field.select_options.map((o) =>
+        `<label class="sf__chip"><input type="checkbox" name="${id}" value="${o.id}"> ${esc(o.value)}</label>`).join("");
+      return `<fieldset class="sf__row" id="${id}" data-required="${f.required ? 1 : 0}"><legend>${esc(f.name)}${star}</legend>${desc}<div class="sf__chips">${boxes}</div></fieldset>`;
+    }
+    if (type === "link_row") {
+      const opts = (f.rows || []).map((r) => `<option value="${r.id}">${esc(r.value)}</option>`).join("");
+      return `<div class="sf__row sf__row--short">${label}<select id="${id}" ${req}><option value="">Choose…</option>${opts}</select></div>`;
+    }
+    return `<div class="sf__row">${label}<input id="${id}" type="text" value="${esc(v)}" ${req}></div>`;
+  }
+
+  function readField(f) {
+    const id = `f-${f.field.id}`;
+    const type = f.field.type;
+    if (type === "multiple_select") return $$(`input[name="${id}"]:checked`).map((i) => Number(i.value));
+    const el = document.getElementById(id);
+    if (!el) return undefined;
+    const raw = el.value.trim();
+    if (type === "number") return raw === "" ? null : Number(raw);
+    if (type === "single_select") return raw === "" ? null : Number(raw);
+    if (type === "link_row") return raw === "" ? [] : [Number(raw)];
+    return raw;
+  }
+
+  async function openShelfForm(box, values) {
+    box.innerHTML = `<p class="count">Loading the form…</p>`;
+    box.scrollIntoView({ behavior: "smooth", block: "start" });
+    let slug, meta;
+    try {
+      ({ slug, meta } = await loadFormMeta());
+    } catch (err) {
+      console.error(err);
+      box.innerHTML = `<p class="notice">The form couldn't be loaded just now. Please try again in a moment.</p>`;
+      return;
+    }
+    const fields = meta.fields.filter((f) => !SKIP_TYPES.includes(f.field.type)).sort((a, b) => a.order - b.order);
+    box.innerHTML = `<form class="sf" novalidate>
+      <h2>Add it to the shelves</h2>
+      <p class="sf__intro">Check the details, then choose the format, genres and your username.</p>
+      ${fields.map((f) => fieldHtml(f, values[f.field.name])).join("")}
+      <p class="sf__error" role="alert" hidden></p>
+      <div class="dialog__actions"><button class="button" type="submit">Add to the shelves</button></div>
+    </form>`;
+
+    const formEl = $("form.sf", box);
+    formEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = $(".sf__error", formEl);
+      errEl.hidden = true;
+
+      const missing = [];
+      const payload = {};
+      for (const f of fields) {
+        const val = readField(f);
+        const empty = val == null || val === "" || (Array.isArray(val) && !val.length);
+        if (f.required && empty) missing.push(f.name);
+        if (!empty) payload[`field_${f.field.id}`] = val;
+      }
+      if (missing.length) {
+        errEl.textContent = `Please fill in: ${missing.join(", ")}.`;
+        errEl.hidden = false;
+        return;
+      }
+
+      const btn = $("button[type=submit]", formEl);
+      btn.disabled = true;
+      btn.textContent = "Adding…";
+      try {
+        const res = await fetch(`${api()}/api/database/views/form/${slug}/submit/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.detail ? JSON.stringify(body.detail) : `Baserow returned ${res.status}`);
+        }
+        box.innerHTML = `<div class="sf sf--done">
+          <h2>Thank you – it's on the shelves</h2>
+          <p>Your book is in the catalogue now. It may take a minute to appear.</p>
+          <div class="dialog__actions"><a class="button" href="books.html">See the books</a>
+          <button class="button button--quiet" type="button" id="add-another">Add another</button></div>
+        </div>`;
+        $("#add-another").addEventListener("click", () => {
+          $("#isbn-result").innerHTML = "";
+          $("#isbn").value = "";
+          $("#isbn").focus();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+      } catch (err) {
+        console.error(err);
+        errEl.textContent = "Something went wrong and the book wasn't added. Please try again, or tell the organisers.";
+        errEl.hidden = false;
+        btn.disabled = false;
+        btn.textContent = "Add to the shelves";
+      }
+    });
   }
 
   function bindAddPage() {
@@ -559,7 +709,7 @@
       const shelf = { "ISBN": isbn, "Book title": plainText(book.title) };
       // The form's Author question may point at either field; fill both, Baserow ignores the one not on the form
       if (book.authors.length) shelf["Author"] = shelf["Suggested Author"] = plainText(book.authors.join(", "));
-      // Synopsis is not sent: Baserow's firewall blocks some text in links. The site fetches it by ISBN instead.
+      if (book.synopsis) shelf["Synopsis"] = trimBlurbs(book.synopsis);
       if (book.pages) shelf["Pages"] = book.pages;
       if (book.language) { if (langListed) shelf["Language"] = book.language; else shelf["Suggested Language"] = book.language; }
       if (book.cover) shelf["Cover URL"] = book.cover;
@@ -576,13 +726,14 @@
           <p class="dialog__synopsis">${esc(excerpt(book.synopsis, 400)) || "<em>No synopsis found – you can add one on the form.</em>"}</p>
           ${dup ? `<p class="notice">"${esc(dup.title)}" is already on the shelves. You can still add your copy.</p>` : ""}
           <div class="dialog__actions">
-            <a class="button" data-lookup="addBook">I own it – add it to the shelves</a>
+            <button class="button" type="button" data-lookup="addBook">I own it – add it to the shelves</button>
             <a class="button button--quiet" data-lookup="recommend">I want to read it – add to the wish list</a>
           </div>
-          <p class="dialog__hint">Details from ${esc(book.sources.join(" and "))}. Anything missing or wrong can be fixed on the form. ${book.synopsis ? "The synopsis isn't copied onto the form – the website shows it automatically from the ISBN." : ""}</p>
+          <p class="dialog__hint">Details from ${esc(book.sources.join(" and "))}. You can correct anything on the next step.</p>
         </div>
-      </article>`;
-      wireFormLink($('[data-lookup="addBook"]', out), "addBook", shelf);
+      </article>
+      <div id="shelf-form"></div>`;
+      $('[data-lookup="addBook"]', out).addEventListener("click", () => openShelfForm($("#shelf-form"), shelf));
       wireFormLink($('[data-lookup="recommend"]', out), "recommend", { "Book title": plainText(book.title), "Author": plainText(book.authors.join(", ")) });
     });
   }
