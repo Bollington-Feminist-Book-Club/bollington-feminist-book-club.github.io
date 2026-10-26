@@ -8,24 +8,24 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261026k">
+  <link rel="stylesheet" href="styles.css?v=20261026m">
   <script>
     try { if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark"); } catch (e) {}
   </script>
-  <script src="config.js?v=20261026k"></script>
+  <script src="config.js?v=20261026m"></script>
 </head>
-<body>
-  <a class="skip" href="#books">Skip to the books</a>
+<body data-page="home">
+  <a class="skip" href="#main">Skip to content</a>
 
   <header class="header">
     <div class="container header__inner">
-      <a class="logo" href="#top" data-club-name>Bollington Feminist Book Club</a>
+      <a class="logo" href="./" data-club-name>Bollington Feminist Book Club</a>
       <nav class="nav" aria-label="Main">
-        <a href="#books">Books</a>
-        <a href="#wishlist" class="nav__extra">Wish list</a>
-        <a href="#members">Members</a>
-        <a href="#about" class="nav__extra">About</a>
-        <a href="#join">Join</a>
+        <a href="books.html" data-page="books">Books</a>
+        <a href="wishlist.html" data-page="wishlist">Wish list</a>
+        <a href="members.html" data-page="members">Members</a>
+        <a href="about.html" data-page="about">About</a>
+        <a class="button button--small" data-form="join" href="#">Join</a>
         <button class="theme-toggle" type="button" aria-label="Switch between light and dark">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
         </button>
@@ -33,91 +33,29 @@
     </div>
   </header>
 
-  <main id="top">
+  <main id="main">
     <section class="hero container">
       <div class="hero__text">
         <h1 class="hero__title" data-club-name>Bollington Feminist Book Club</h1>
         <p class="hero__description">A welcoming space to explore intersectional feminism in literature. We share books by women and non-binary authors – fiction, memoir, poetry, sci-fi – and pass them between us.</p>
         <div class="hero__actions">
-          <a class="button" href="#books">Browse the books</a>
-          <a class="button button--quiet" data-form="join" href="#join">Join the club</a>
+          <a class="button" href="books.html">Browse the books</a>
+          <a class="button button--quiet" href="about.html">How it works</a>
         </div>
       </div>
       <div class="hero__stack" id="hero-stack" aria-label="Newest books"></div>
     </section>
 
-    <section id="books" class="section container">
+    <section class="section container">
       <div class="section__head">
-        <h2 class="section__title">On the shelves</h2>
-        <a class="section__link" data-form="addBook" href="#">Add a book</a>
+        <h2 class="section__title">New on the shelves</h2>
+        <a class="section__link" href="books.html">See all books</a>
       </div>
-
-      <div class="filters" role="search">
-        <label class="filters__search">
-          <span class="visually-hidden">Search titles and authors</span>
-          <input type="search" id="q" placeholder="Search titles and authors" autocomplete="off">
-        </label>
-        <label><span class="visually-hidden">Genre</span>
-          <select id="genre"><option value="">All genres</option></select>
-        </label>
-        <label><span class="visually-hidden">Language</span>
-          <select id="lang"><option value="">All languages</option></select>
-        </label>
-        <label><span class="visually-hidden">Sort</span>
-          <select id="sort">
-            <option value="recent">Newest</option>
-            <option value="rating">Best rated</option>
-            <option value="title">A to Z</option>
-            <option value="short">Shortest</option>
-          </select>
-        </label>
-        <label class="filters__toggle"><input type="checkbox" id="avail"> Available now</label>
-      </div>
-
-      <p class="count" id="count" aria-live="polite"></p>
-      <div class="grid" id="grid"></div>
+      <div class="grid" id="grid-latest"></div>
       <p class="notice" id="notice" hidden></p>
     </section>
 
-
-    <section id="wishlist" class="section container">
-      <div class="section__head">
-        <h2 class="section__title">On our wish list</h2>
-        <a class="section__link" data-form="recommend" href="#">Recommend a book</a>
-      </div>
-      <p class="section__intro">Books members want to read that nobody has on their shelf yet. If you own one, add it to the catalogue.</p>
-      <ul class="wishlist" id="wish-items"></ul>
-    </section>
-
-    <section id="members" class="section container">
-      <div class="section__head">
-        <h2 class="section__title">Our members</h2>
-      </div>
-      <ul class="members" id="members-list"></ul>
-    </section>
-
-    <section id="about" class="section container about">
-      <div class="section__head">
-        <h2 class="section__title">Forget reading lists</h2>
-      </div>
-      <p class="about__lead">Each month, members bring one to three books they've read and enjoyed – their own copies, digital files or library finds – and pitch them to the group. If one catches your eye, borrow the book, ask for the digital file or take the reference to your library. It's how we discover new authors, share our favourites and discuss and debate them.</p>
-      <div class="about__cols">
-        <div>
-          <h3>When and where</h3>
-          <p>Once a month, sometimes more, on an evening or at the weekend – the group votes on timing. We meet in a local café or bar, or in a room above the Bridgend Centre, and may take turns hosting at home as we get to know each other.</p>
-        </div>
-        <div>
-          <h3>What counts</h3>
-          <p>Books by women or non-binary authors with a feminist element, as subtle or as activist as you like. A suffragette's biography counts. So does a romantasy with an unconventional world and an inspiring heroine. No genre is left out.</p>
-        </div>
-        <div>
-          <h3>Who we are</h3>
-          <p>We're Tiffany and Xenia, two bookworms in our 30s who have lived in Bollington for a few years and wanted to meet others here who love reading as much as we do.</p>
-        </div>
-      </div>
-    </section>
-
-    <section id="join" class="join">
+    <section class="join">
       <div class="container join__inner">
         <h2>Come and join us</h2>
         <p>Tell us a little about yourself and we'll let you know when the next meeting is. Once you're a member, you can borrow and rate books here.</p>
@@ -128,7 +66,7 @@
 
   <footer class="footer container">
     <span>© <span id="year"></span> <span data-club-name>Bollington Feminist Book Club</span></span>
-    <span><a data-form="addBook" href="#">Add a book</a> · <a data-form="rate" href="#">Rate a book</a></span>
+    <span><a data-form="addBook" href="#">Add a book</a> · <a data-form="rate" href="#">Rate a book</a> · <a data-form="recommend" href="#">Recommend a book</a></span>
   </footer>
 
   <dialog id="book-dialog" aria-labelledby="d-title">
@@ -136,6 +74,6 @@
     <div class="dialog__body" id="d-body"></div>
   </dialog>
 
-  <script src="app.js?v=20261026k"></script>
+  <script src="app.js?v=20261026m"></script>
 </body>
 </html>

@@ -25,7 +25,8 @@ With no token, the site shows sample books in preview mode.
 
 ## Files
 
-- `index.html` – page structure
+- `index.html` – home page
+- `books.html`, `wishlist.html`, `members.html`, `about.html` – the other pages (each repeats the same header and footer)
 - `styles.css` – design
 - `app.js` – loads the catalogue, filters, book details
 - `config.js` – settings
@@ -33,4 +34,4 @@ With no token, the site shows sample books in preview mode.
 
 ## After editing styles.css, app.js or config.js
 
-Browsers keep old copies of these files. In `index.html`, change the `?v=` number on the three lines that load them (any new value works) so visitors get the new version straight away.
+Browsers keep old copies of these files. In every `.html` page, change the `?v=` number on the three lines that load them (any new value works) so visitors get the new version straight away.

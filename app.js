@@ -290,38 +290,50 @@
 
     const dlg = $("#book-dialog");
     if (!dlg.open) dlg.showModal();
-    history.replaceState(null, "", `#book-${b.id}`);
+    history.replaceState(null, "", `${location.pathname}#book-${b.id}`);
   }
 
-  function skeleton(n = 4) {
-    $("#grid").innerHTML = Array.from({ length: n }, () =>
+  function skeleton(el, n = 4) {
+    if (!el) return;
+    el.innerHTML = Array.from({ length: n }, () =>
       `<div class="skeleton"><div class="cover"></div><div class="bar" style="width:80%"></div><div class="bar" style="width:50%"></div></div>`).join("");
+  }
+
+  function renderLatest() {
+    const el = $("#grid-latest");
+    if (!el) return;
+    const newest = [...state.books].sort((a, b) => b.order - a.order).slice(0, 4);
+    el.innerHTML = newest.map(cardHtml).join("");
   }
 
   /* ---------- wiring ---------- */
 
+  const on = (sel, ev, fn) => { const el = $(sel); if (el) el.addEventListener(ev, fn); };
+
   function bind() {
     $$("[data-club-name]").forEach((el) => (el.textContent = cfg.clubName || "Book Club"));
-    if (cfg.clubName) document.title = cfg.clubName;
-    $("#year").textContent = new Date().getFullYear();
+    const page = document.body.dataset.page;
+    const titles = { books: "Books", wishlist: "Wish list", members: "Members", about: "About" };
+    document.title = titles[page] ? `${titles[page]} – ${cfg.clubName}` : cfg.clubName || document.title;
+    $$(".nav a[data-page]").forEach((a) => { if (a.dataset.page === page) a.setAttribute("aria-current", "page"); });
+    if ($("#year")) $("#year").textContent = new Date().getFullYear();
     $$("[data-form]").forEach((a) => wireFormLink(a, a.dataset.form));
 
-    $("#q").addEventListener("input", (e) => { state.q = e.target.value; renderGrid(); });
-    $("#genre").addEventListener("change", (e) => { state.genre = e.target.value; renderGrid(); });
-    $("#lang").addEventListener("change", (e) => { state.lang = e.target.value; renderGrid(); });
-    $("#sort").addEventListener("change", (e) => { state.sort = e.target.value; renderGrid(); });
-    $("#avail").addEventListener("change", (e) => { state.avail = e.target.checked; renderGrid(); });
+    on("#q", "input", (e) => { state.q = e.target.value; renderGrid(); });
+    on("#genre", "change", (e) => { state.genre = e.target.value; renderGrid(); });
+    on("#lang", "change", (e) => { state.lang = e.target.value; renderGrid(); });
+    on("#sort", "change", (e) => { state.sort = e.target.value; renderGrid(); });
+    on("#avail", "change", (e) => { state.avail = e.target.checked; renderGrid(); });
 
-    $("#grid").addEventListener("click", (e) => {
-      const card = e.target.closest(".book[data-id]");
-      if (card) openBook(card.dataset.id);
-    });
-    $("#hero-stack").addEventListener("click", (e) => {
-      const link = e.target.closest("[data-open]");
-      if (link) openBook(link.dataset.open);
-    });
+    const openFrom = (e) => {
+      const el = e.target.closest("[data-id], [data-open]");
+      if (el) openBook(el.dataset.id || el.dataset.open);
+    };
+    on("#grid", "click", openFrom);
+    on("#grid-latest", "click", openFrom);
+    on("#hero-stack", "click", openFrom);
 
-    $(".theme-toggle").addEventListener("click", () => {
+    on(".theme-toggle", "click", () => {
       const root = document.documentElement;
       const dark = root.getAttribute("data-theme") !== "dark";
       if (dark) root.setAttribute("data-theme", "dark"); else root.removeAttribute("data-theme");
@@ -329,60 +341,68 @@
     });
 
     const dlg = $("#book-dialog");
-    $(".close", dlg).addEventListener("click", () => dlg.close());
-    dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
-    dlg.addEventListener("close", () => {
-      if (location.hash.startsWith("#book-")) history.replaceState(null, "", "#books");
-    });
+    if (dlg) {
+      $(".close", dlg).addEventListener("click", () => dlg.close());
+      dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+      dlg.addEventListener("close", () => {
+        if (location.hash.startsWith("#book-")) history.replaceState(null, "", location.pathname);
+      });
+    }
   }
 
-  async function init() {
-    bind();
-    skeleton();
+  function showNotice(text) {
+    const n = $("#notice");
+    if (!n) return;
+    n.hidden = false;
+    n.textContent = text;
+  }
+
+  async function loadBooks() {
+    if (!$("#grid") && !$("#grid-latest") && !$("#hero-stack")) return;
+    skeleton($("#grid"));
+    skeleton($("#grid-latest"));
     try {
       const { rows, sample } = await fetchBooks();
       state.books = rows.map(normalise);
-      if (sample) {
-        const n = $("#notice");
-        n.hidden = false;
-        n.textContent = "Showing sample books until the Baserow token is added to config.js.";
-      }
+      if (sample) showNotice("Showing sample books until the Baserow token is added to config.js.");
     } catch (err) {
       console.error(err);
-      $("#grid").innerHTML = "";
-      const n = $("#notice");
-      n.hidden = false;
-      n.textContent = "We couldn't load the catalogue just now. Please try again in a moment.";
+      ["#grid", "#grid-latest"].forEach((s) => { if ($(s)) $(s).innerHTML = ""; });
+      showNotice("We couldn't load the catalogue just now. Please try again in a moment.");
       return;
     }
-    loadExtras();
-    renderFilters();
-    renderGrid();
-    renderHero();
+    if ($("#grid")) { renderFilters(); renderGrid(); }
+    renderLatest();
+    if ($("#hero-stack")) renderHero();
 
     const m = location.hash.match(/^#book-(\d+)$/);
     if (m) openBook(m[1]);
   }
 
-  async function loadExtras() {
-    if (cfg.baserowToken && cfg.wishListTableId) {
-      fetchTable(cfg.wishListTableId).then(renderWishlist).catch((e) => {
-        console.warn("Wish list not loaded", e);
-        $("#wish-items").innerHTML = `<li class="empty">The wish list will appear here soon.</li>`;
-      });
-    } else {
-      renderWishlist([]);
-    }
-    if (cfg.membersViewLink) {
-      fetchPublicView(cfg.membersViewLink).then(renderMembers).catch((e) => {
-        console.warn("Members not loaded", e);
-        $("#members").hidden = true;
-        $$('a[href="#members"]').forEach((a) => (a.hidden = true));
-      });
-    } else {
-      $("#members").hidden = true;
-      $$('a[href="#members"]').forEach((a) => (a.hidden = true));
-    }
+  function loadWishlist() {
+    if (!$("#wish-items")) return;
+    if (!cfg.baserowToken || !cfg.wishListTableId) { renderWishlist([]); return; }
+    fetchTable(cfg.wishListTableId).then(renderWishlist).catch((e) => {
+      console.warn("Wish list not loaded", e);
+      $("#wish-items").innerHTML = `<li class="empty">The wish list will appear here soon.</li>`;
+    });
+  }
+
+  function loadMembers() {
+    if (!$("#members-list")) return;
+    const fail = (e) => {
+      if (e) console.warn("Members not loaded", e);
+      $("#members-list").innerHTML = `<li class="empty">The members list will appear here soon.</li>`;
+    };
+    if (!cfg.membersViewLink) { fail(); return; }
+    fetchPublicView(cfg.membersViewLink).then(renderMembers).catch(fail);
+  }
+
+  function init() {
+    bind();
+    loadBooks();
+    loadWishlist();
+    loadMembers();
   }
 
   document.addEventListener("DOMContentLoaded", init);

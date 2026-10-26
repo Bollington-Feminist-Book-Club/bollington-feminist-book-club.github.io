@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bollington Feminist Book Club</title>
+  <meta name="description" content="A welcoming space in Bollington to explore intersectional feminism in literature, share books by women and non-binary authors and make new friends.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=20261026m">
+  <script>
+    try { if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark"); } catch (e) {}
+  </script>
+  <script src="config.js?v=20261026m"></script>
+</head>
+<body data-page="books">
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="header">
+    <div class="container header__inner">
+      <a class="logo" href="./" data-club-name>Bollington Feminist Book Club</a>
+      <nav class="nav" aria-label="Main">
+        <a href="books.html" data-page="books">Books</a>
+        <a href="wishlist.html" data-page="wishlist">Wish list</a>
+        <a href="members.html" data-page="members">Members</a>
+        <a href="about.html" data-page="about">About</a>
+        <a class="button button--small" data-form="join" href="#">Join</a>
+        <button class="theme-toggle" type="button" aria-label="Switch between light and dark">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section container page">
+      <div class="page__head">
+        <h1 class="page__title">On the shelves</h1>
+        <a class="section__link" data-form="addBook" href="#">Add a book</a>
+      </div>
+      <p class="page__intro">Every book here belongs to a member. Pick one, borrow it and pass it back when you're done.</p>
+
+      <div class="filters" role="search">
+        <label class="filters__search">
+          <span class="visually-hidden">Search titles and authors</span>
+          <input type="search" id="q" placeholder="Search titles and authors" autocomplete="off">
+        </label>
+        <label><span class="visually-hidden">Genre</span>
+          <select id="genre"><option value="">All genres</option></select>
+        </label>
+        <label><span class="visually-hidden">Language</span>
+          <select id="lang"><option value="">All languages</option></select>
+        </label>
+        <label><span class="visually-hidden">Sort</span>
+          <select id="sort">
+            <option value="recent">Newest</option>
+            <option value="rating">Best rated</option>
+            <option value="title">A to Z</option>
+            <option value="short">Shortest</option>
+          </select>
+        </label>
+        <label class="filters__toggle"><input type="checkbox" id="avail"> Available now</label>
+      </div>
+
+      <p class="count" id="count" aria-live="polite"></p>
+      <div class="grid" id="grid"></div>
+      <p class="notice" id="notice" hidden></p>
+    </section>
+  </main>
+
+  <footer class="footer container">
+    <span>© <span id="year"></span> <span data-club-name>Bollington Feminist Book Club</span></span>
+    <span><a data-form="addBook" href="#">Add a book</a> · <a data-form="rate" href="#">Rate a book</a> · <a data-form="recommend" href="#">Recommend a book</a></span>
+  </footer>
+
+  <dialog id="book-dialog" aria-labelledby="d-title">
+    <button class="close" type="button" aria-label="Close">×</button>
+    <div class="dialog__body" id="d-body"></div>
+  </dialog>
+
+  <script src="app.js?v=20261026m"></script>
+</body>
+</html>
