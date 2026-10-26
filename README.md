@@ -30,3 +30,7 @@ With no token, the site shows sample books in preview mode.
 - `app.js` – loads the catalogue, filters, book details
 - `config.js` – settings
 - `data/sample.json` – sample books for preview mode
+
+## After editing styles.css, app.js or config.js
+
+Browsers keep old copies of these files. In `index.html`, change the `?v=` number on the three lines that load them (any new value works) so visitors get the new version straight away.

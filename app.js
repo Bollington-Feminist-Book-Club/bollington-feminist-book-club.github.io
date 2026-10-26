@@ -190,23 +190,12 @@
     fill("#lang", uniq(state.books.map((b) => b.language)));
   }
 
-  function renderFeatured() {
-    const pool = [...state.books].sort((a, b) => b.order - a.order);
-    const b = pool.find((x) => x.status === "available" && x.cover) || pool[0];
-    if (!b) { $("#featured").innerHTML = ""; return; }
-    const owner = b.owners[0];
-    $("#featured").innerHTML = `<article class="featured">
-      <a class="featured__cover" href="#book-${b.id}" data-open="${b.id}" tabindex="-1" aria-hidden="true">${coverHtml(b, true)}</a>
-      <div>
-        <p class="featured__label">Newest on the shelves</p>
-        <div class="tags">${b.genres.slice(0, 3).map((g) => `<span class="tag">${esc(g)}</span>`).join("")}</div>
-        <h2 class="featured__title"><a href="#book-${b.id}" data-open="${b.id}">${esc(b.title)}</a></h2>
-        <p class="featured__author">${esc(b.authors.join(", "))}</p>
-        <p class="featured__excerpt">${esc(excerpt(b.synopsis))}</p>
-        ${owner ? `<div class="meta"><span class="avatar">${initial(owner)}</span>
-          <span><strong>Shared by ${esc(owner)}</strong>${status(b)}</span></div>` : ""}
-      </div>
-    </article>`;
+  function renderHero() {
+    const newest = [...state.books].filter((b) => b.cover).sort((a, b) => b.order - a.order).slice(0, 3);
+    // Newest sits in the middle, on top
+    const order = newest.length === 3 ? [newest[1], newest[0], newest[2]] : newest;
+    $("#hero-stack").innerHTML = order.map((b) =>
+      `<button type="button" data-open="${b.id}" aria-label="${esc(b.title)}">${coverHtml(b, true)}</button>`).join("");
   }
 
   function openBook(id) {
@@ -266,9 +255,9 @@
       const card = e.target.closest(".book[data-id]");
       if (card) openBook(card.dataset.id);
     });
-    $("#featured").addEventListener("click", (e) => {
+    $("#hero-stack").addEventListener("click", (e) => {
       const link = e.target.closest("[data-open]");
-      if (link) { e.preventDefault(); openBook(link.dataset.open); }
+      if (link) openBook(link.dataset.open);
     });
 
     $(".theme-toggle").addEventListener("click", () => {
@@ -307,7 +296,7 @@
     }
     renderFilters();
     renderGrid();
-    renderFeatured();
+    renderHero();
 
     const m = location.hash.match(/^#book-(\d+)$/);
     if (m) openBook(m[1]);

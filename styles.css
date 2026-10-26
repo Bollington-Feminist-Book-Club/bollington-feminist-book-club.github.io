@@ -73,10 +73,24 @@ p { margin: 0 0 1em; }
 }
 
 /* Hero */
-.hero { text-align: center; padding-top: 32px; padding-bottom: 56px; }
-.hero__title { font-size: clamp(36px, 7vw, 60px); margin-bottom: 16px; }
-.hero__description { max-width: 620px; margin: 0 auto; font-size: 21px; color: var(--text-alt); }
-@media (max-width: 560px) { .hero__description { font-size: 18px; } }
+.hero { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; padding-top: 24px; padding-bottom: 80px; }
+.hero__title { font-size: clamp(38px, 6vw, 60px); margin-bottom: 16px; }
+.hero__description { max-width: 520px; font-size: 21px; color: var(--text-alt); margin-bottom: 28px; }
+.hero__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.hero__stack { position: relative; height: 380px; }
+.hero__stack button { all: unset; cursor: pointer; position: absolute; width: 44%; max-width: 200px; transition: transform .3s; }
+.hero__stack button .cover { box-shadow: 0 18px 40px rgba(20, 24, 80, .25); }
+.hero__stack button:nth-child(1) { left: 2%;  top: 50px; transform: rotate(-7deg); }
+.hero__stack button:nth-child(2) { left: 28%; top: 0;    transform: rotate(2deg); z-index: 2; }
+.hero__stack button:nth-child(3) { left: 54%; top: 64px; transform: rotate(8deg); }
+.hero__stack button:hover { transform: translateY(-8px) rotate(0); z-index: 3; }
+.hero__stack button:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; border-radius: var(--radius); }
+@media (max-width: 760px) {
+  .hero { grid-template-columns: 1fr; gap: 16px; padding-bottom: 56px; }
+  .hero__description { font-size: 18px; }
+  .hero__stack { height: 260px; }
+  .hero__stack button { width: 36%; }
+}
 
 /* Buttons */
 .button {
