@@ -91,7 +91,7 @@ Pre-filling uses the **table field names**, not the questions' labels on the for
 
 Edit files directly on GitHub (pencil icon) or locally, then commit to `main`. The *Deploy Jekyll* GitHub Action publishes the site in about a minute; check the Actions tab if a change doesn't appear.
 
-Browsers keep old copies of `styles.css`, `app.js` and `config.js`. After changing any of them, change the `?v=` value on the lines that load them in **every** `.html` file (any new value works), so visitors get the new version straight away.
+Each page loads `styles.css`, `config.js` and `app.js` with a fresh version number every minute, so visitors always get the latest code without any manual cache-busting. The pages themselves can be cached by browsers for up to ten minutes after a change.
 
 ## Files
 

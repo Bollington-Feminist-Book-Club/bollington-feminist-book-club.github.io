@@ -2,17 +2,22 @@
 <html lang="en-GB">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Bollington Feminist Book Club</title>
   <meta name="description" content="A welcoming space in Bollington to explore intersectional feminism in literature, share books by women and non-binary authors and make new friends.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261026w">
   <script>
     try { if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark"); } catch (e) {}
   </script>
-  <script src="config.js?v=20261026w"></script>
+  <script>
+    // Always load the latest code: a new value every minute stops browsers using stale copies
+    window.__v = Math.floor(Date.now() / 60000);
+    document.write('<link rel="stylesheet" href="styles.css?v=' + __v + '">');
+    document.write('<script src="config.js?v=' + __v + '"><\/script>');
+  </script>
 </head>
 <body data-page="add">
   <a class="skip" href="#main">Skip to content</a>
@@ -57,6 +62,6 @@
     <span><a href="add.html">Add a book</a> · <a data-form="rate" href="#">Rate a book</a> · <a data-form="recommend" href="#">Recommend a book</a></span>
   </footer>
 
-  <script src="app.js?v=20261026w"></script>
+  <script>document.write('<script src="app.js?v=' + window.__v + '"><\/script>');</script>
 </body>
 </html>
