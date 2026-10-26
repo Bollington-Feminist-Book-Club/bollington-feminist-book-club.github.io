@@ -95,7 +95,9 @@
       format: single(r["Format"]),
       language: single(r["Language"]).replace(/^_not listed$/, ""),
       pages: r["Pages"] ? Number(r["Pages"]) : null,
-      authors: values(r["Author(s)"]),
+      authors: (r["Author"] || "").trim()
+        ? r["Author"].split(",").map((s) => s.trim()).filter(Boolean)
+        : values(r["Author(s)"]),
       genres: values(r["Genre"]),
       owners: values(r["Owner"]),
       rating: avg,
@@ -478,7 +480,6 @@
     const formEl = $("#isbn-form");
     if (!formEl) return;
     const out = $("#isbn-result");
-    const knownAuthors = () => new Set(state.books.flatMap((b) => b.authors));
     const knownLangs = ["English", "Spanish"];
 
     formEl.addEventListener("submit", async (e) => {
@@ -500,12 +501,9 @@
       }
 
       const dup = state.books.find((b) => b.isbn === isbn || b.title.toLowerCase() === book.title.toLowerCase());
-      const authorsKnown = book.authors.filter((n) => knownAuthors().has(n));
-      const authorsNew = book.authors.filter((n) => !knownAuthors().has(n));
       const langListed = knownLangs.includes(book.language);
       const shelf = { "ISBN": isbn, "Book title": book.title };
-      if (authorsKnown.length) shelf["Author(s)"] = authorsKnown.join(",");
-      if (authorsNew.length) shelf["Suggested Author"] = authorsNew.join(", ");
+      if (book.authors.length) shelf["Author"] = book.authors.join(", ");
       if (book.synopsis) shelf["Synopsis"] = book.synopsis.slice(0, 1800);
       if (book.pages) shelf["Pages"] = book.pages;
       if (book.language) { if (langListed) shelf["Language"] = book.language; else shelf["Suggested Language"] = book.language; }
