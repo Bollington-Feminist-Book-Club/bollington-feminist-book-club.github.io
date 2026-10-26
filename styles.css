@@ -205,6 +205,18 @@ p { margin: 0 0 1em; }
 .nav a.button { color: #fff; }
 .nav a.button:hover { color: var(--bg); }
 
+/* Add a book */
+.isbn { display: flex; flex-wrap: wrap; gap: 10px; max-width: 560px; margin-bottom: 32px; }
+.isbn input { flex: 1 1 240px; font: 20px var(--sans); letter-spacing: .5px; color: var(--text); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 11px 14px; }
+.lookup { display: grid; grid-template-columns: 200px 1fr; gap: 32px; align-items: start; background: var(--card); border-radius: 12px; padding: 28px; margin-bottom: 32px; }
+.lookup h2 { font-size: 30px; margin-bottom: 2px; }
+.lookup .notice { margin-top: 8px; }
+.page__aside { color: var(--muted); font-size: 16px; }
+@media (max-width: 640px) {
+  .lookup { grid-template-columns: 1fr; padding: 20px; }
+  .lookup__cover { width: 140px; }
+}
+
 /* Wish list */
 .section__intro { color: var(--text-alt); max-width: 640px; margin-bottom: 24px; }
 .wishlist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }

@@ -26,6 +26,7 @@ With no token, the site shows sample books in preview mode.
 ## Files
 
 - `index.html` – home page
+- `add.html` – add a book by ISBN (looks it up in Open Library, then Google Books for anything missing, and opens the Baserow form pre-filled)
 - `books.html`, `wishlist.html`, `members.html`, `about.html` – the other pages (each repeats the same header and footer)
 - `styles.css` – design
 - `app.js` – loads the catalogue, filters, book details

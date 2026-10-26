@@ -66,6 +66,8 @@
 
   /* ---------- data ---------- */
 
+  const cleanIsbn = (s) => String(s || "").toUpperCase().replace(/[^0-9X]/g, "");
+
   function normalise(r) {
     const scores = values(r["Rating Scores"]).map(Number).filter((n) => !isNaN(n));
     const avg = r["Average Score"] != null && r["Average Score"] !== ""
@@ -86,7 +88,10 @@
       order: Number(r.order) || r.id,
       title: r["Book title"] || "Untitled",
       synopsis: r["Synopsis"] || "",
-      cover: cover ? cover.url : "",
+      cover: cover ? cover.url
+        : (r["Cover URL"] || "").trim()
+        || (cleanIsbn(r["ISBN"]) ? `https://covers.openlibrary.org/b/isbn/${cleanIsbn(r["ISBN"])}-L.jpg?default=false` : ""),
+      isbn: cleanIsbn(r["ISBN"]),
       format: single(r["Format"]),
       language: single(r["Language"]).replace(/^_not listed$/, ""),
       pages: r["Pages"] ? Number(r["Pages"]) : null,
@@ -313,7 +318,7 @@
   function bind() {
     $$("[data-club-name]").forEach((el) => (el.textContent = cfg.clubName || "Book Club"));
     const page = document.body.dataset.page;
-    const titles = { books: "Books", wishlist: "Wish list", members: "Members", about: "About" };
+    const titles = { books: "Books", wishlist: "Wish list", members: "Members", about: "About", add: "Add a book" };
     document.title = titles[page] ? `${titles[page]} – ${cfg.clubName}` : cfg.clubName || document.title;
     $$(".nav a[data-page]").forEach((a) => { if (a.dataset.page === page) a.setAttribute("aria-current", "page"); });
     if ($("#year")) $("#year").textContent = new Date().getFullYear();
@@ -398,11 +403,142 @@
     fetchPublicView(cfg.membersViewLink).then(renderMembers).catch(fail);
   }
 
+
+  /* ---------- ISBN lookup (Open Library, then Google Books for gaps) ---------- */
+
+  const LANGS = { eng: "English", en: "English", spa: "Spanish", es: "Spanish", cat: "Catalan", ca: "Catalan",
+    fre: "French", fra: "French", fr: "French", ger: "German", deu: "German", de: "German",
+    ita: "Italian", it: "Italian", por: "Portuguese", pt: "Portuguese" };
+
+  const getJson = (url) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+  function imageExists(url) {
+    return new Promise((resolve) => {
+      if (!url) return resolve(false);
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth > 1);
+      img.onerror = () => resolve(false);
+      img.src = url;
+    });
+  }
+
+  async function fromOpenLibrary(isbn) {
+    const ed = await getJson(`https://openlibrary.org/isbn/${isbn}.json`);
+    if (!ed) return null;
+    const out = { title: ed.title || "", pages: ed.number_of_pages || null, authors: [], synopsis: "", language: "" };
+    if (ed.subtitle) out.title += `: ${ed.subtitle}`;
+    const langKey = ((ed.languages || [])[0] || {}).key;
+    if (langKey) out.language = LANGS[langKey.split("/").pop()] || langKey.split("/").pop();
+    const workKey = ((ed.works || [])[0] || {}).key;
+    const work = workKey ? await getJson(`https://openlibrary.org${workKey}.json`) : null;
+    const desc = (ed.description || (work && work.description));
+    out.synopsis = typeof desc === "string" ? desc : (desc && desc.value) || "";
+    const authorKeys = (ed.authors || (work && work.authors && work.authors.map((a) => a.author)) || []).map((a) => a && a.key).filter(Boolean);
+    const people = await Promise.all(authorKeys.slice(0, 4).map((k) => getJson(`https://openlibrary.org${k}.json`)));
+    out.authors = people.filter(Boolean).map((p) => p.name).filter(Boolean);
+    const coverUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
+    out.cover = (await imageExists(coverUrl)) ? coverUrl : "";
+    return out;
+  }
+
+  async function fromGoogle(isbn) {
+    const data = await getJson(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const v = data && data.items && data.items[0] && data.items[0].volumeInfo;
+    if (!v) return null;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = v.description || "";
+    const img = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
+    return {
+      title: [v.title, v.subtitle].filter(Boolean).join(": "),
+      authors: v.authors || [],
+      pages: v.pageCount || null,
+      synopsis: tmp.textContent.trim(),
+      language: LANGS[v.language] || v.language || "",
+      cover: img ? img.replace(/^http:/, "https:").replace("&edge=curl", "") : ""
+    };
+  }
+
+  async function lookupIsbn(isbn) {
+    const [ol, g] = await Promise.all([fromOpenLibrary(isbn), fromGoogle(isbn)]);
+    if (!ol && !g) return null;
+    const a = ol || {}, b = g || {};
+    return {
+      isbn,
+      title: a.title || b.title || "",
+      authors: (a.authors && a.authors.length ? a.authors : b.authors) || [],
+      pages: a.pages || b.pages || null,
+      synopsis: (b.synopsis && b.synopsis.length > (a.synopsis || "").length ? b.synopsis : a.synopsis) || "",
+      language: a.language || b.language || "",
+      cover: a.cover || b.cover || "",
+      sources: [ol && "Open Library", g && "Google Books"].filter(Boolean)
+    };
+  }
+
+  function bindAddPage() {
+    const formEl = $("#isbn-form");
+    if (!formEl) return;
+    const out = $("#isbn-result");
+    const knownAuthors = () => new Set(state.books.flatMap((b) => b.authors));
+    const knownLangs = ["English", "Spanish"];
+
+    formEl.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const isbn = cleanIsbn($("#isbn").value);
+      if (isbn.length !== 10 && isbn.length !== 13) {
+        out.innerHTML = `<p class="notice">That doesn't look like an ISBN. It's the 10 or 13-digit number on the back cover, near the barcode.</p>`;
+        return;
+      }
+      out.innerHTML = `<p class="count">Looking it up…</p>`;
+      if (!state.books.length) {
+        try { state.books = (await fetchBooks()).rows.map(normalise); } catch (err) { /* duplicate check is optional */ }
+      }
+      const book = await lookupIsbn(isbn);
+      if (!book) {
+        out.innerHTML = `<p class="notice">We couldn't find that ISBN in Open Library or Google Books. You can still <a data-form="addBook" href="#">add the book by hand</a>.</p>`;
+        $$("[data-form]", out).forEach((a) => wireFormLink(a, a.dataset.form));
+        return;
+      }
+
+      const dup = state.books.find((b) => b.isbn === isbn || b.title.toLowerCase() === book.title.toLowerCase());
+      const authorsKnown = book.authors.filter((n) => knownAuthors().has(n));
+      const authorsNew = book.authors.filter((n) => !knownAuthors().has(n));
+      const langListed = knownLangs.includes(book.language);
+      const shelf = { "ISBN": isbn, "Book title": book.title };
+      if (authorsKnown.length) shelf["Author(s)"] = authorsKnown.join(",");
+      if (authorsNew.length) shelf["Suggested Author"] = authorsNew.join(", ");
+      if (book.synopsis) shelf["Synopsis"] = book.synopsis.slice(0, 1800);
+      if (book.pages) shelf["Pages"] = book.pages;
+      if (book.language) { if (langListed) shelf["Language"] = book.language; else shelf["Suggested Language"] = book.language; }
+      if (book.cover) shelf["Cover URL"] = book.cover;
+
+      const preview = { id: "preview", title: book.title, authors: book.authors, cover: book.cover };
+      const facts = [book.language, book.pages ? `${book.pages} pages` : ""].filter(Boolean).join(" · ");
+      out.innerHTML = `<article class="lookup">
+        <div class="lookup__cover">${coverHtml(preview, true)}</div>
+        <div>
+          <h2>${esc(book.title)}</h2>
+          <p class="featured__author">${esc(book.authors.join(", ") || "Author not found")}</p>
+          ${facts ? `<p class="dialog__facts">${esc(facts)}</p>` : ""}
+          <p class="dialog__synopsis">${esc(excerpt(book.synopsis, 400)) || "<em>No synopsis found – you can add one on the form.</em>"}</p>
+          ${dup ? `<p class="notice">"${esc(dup.title)}" is already on the shelves. You can still add your copy.</p>` : ""}
+          <div class="dialog__actions">
+            <a class="button" data-lookup="addBook">I own it – add it to the shelves</a>
+            <a class="button button--quiet" data-lookup="recommend">I want to read it – add to the wish list</a>
+          </div>
+          <p class="dialog__hint">Details from ${esc(book.sources.join(" and "))}. Anything missing or wrong can be fixed on the form.</p>
+        </div>
+      </article>`;
+      wireFormLink($('[data-lookup="addBook"]', out), "addBook", shelf);
+      wireFormLink($('[data-lookup="recommend"]', out), "recommend", { "Book title": book.title, "Author": book.authors.join(", ") });
+    });
+  }
+
   function init() {
     bind();
     loadBooks();
     loadWishlist();
     loadMembers();
+    bindAddPage();
   }
 
   document.addEventListener("DOMContentLoaded", init);
