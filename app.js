@@ -224,7 +224,7 @@
   }
 
   function renderWishlist(rows) {
-    const el = $("#wishlist");
+    const el = $("#wish-items");
     const items = rows
       .filter((r) => (r["Recommendation"] || "").trim())
       .sort((a, b) => b.id - a.id)
@@ -366,7 +366,7 @@
     if (cfg.baserowToken && cfg.wishListTableId) {
       fetchTable(cfg.wishListTableId).then(renderWishlist).catch((e) => {
         console.warn("Wish list not loaded", e);
-        $("#wishlist").innerHTML = `<li class="empty">The wish list will appear here soon.</li>`;
+        $("#wish-items").innerHTML = `<li class="empty">The wish list will appear here soon.</li>`;
       });
     } else {
       renderWishlist([]);
