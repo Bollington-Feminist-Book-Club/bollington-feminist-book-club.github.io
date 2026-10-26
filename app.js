@@ -476,6 +476,32 @@
     };
   }
 
+
+  // Keep pre-fill links short and plain: Baserow's firewall rejects some long or unusual URLs (HTTP 403)
+  function plainText(s) {
+    return String(s || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/[‘’‚′]/g, "'")
+      .replace(/[“”„″]/g, '"')
+      .replace(/[‒-―]/g, " - ")
+      .replace(/…/g, "...")
+      .replace(/[<>{}\[\]\\|`^;=]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function shortSynopsis(s, max = 350) {
+    const text = plainText(s);
+    if (text.length <= max) return text;
+    const sentences = text.match(/[^.!?]+[.!?]+(\s|$)/g) || [];
+    let out = "";
+    for (const sentence of sentences) {
+      if ((out + sentence).length > max) break;
+      out += sentence;
+    }
+    return (out.trim() || text.slice(0, text.lastIndexOf(" ", max)) + "...");
+  }
+
   function bindAddPage() {
     const formEl = $("#isbn-form");
     if (!formEl) return;
@@ -502,10 +528,10 @@
 
       const dup = state.books.find((b) => b.isbn === isbn || b.title.toLowerCase() === book.title.toLowerCase());
       const langListed = knownLangs.includes(book.language);
-      const shelf = { "ISBN": isbn, "Book title": book.title };
+      const shelf = { "ISBN": isbn, "Book title": plainText(book.title) };
       // The form's Author question may point at either field; fill both, Baserow ignores the one not on the form
-      if (book.authors.length) shelf["Author"] = shelf["Suggested Author"] = book.authors.join(", ");
-      if (book.synopsis) shelf["Synopsis"] = book.synopsis.slice(0, 1800);
+      if (book.authors.length) shelf["Author"] = shelf["Suggested Author"] = plainText(book.authors.join(", "));
+      if (book.synopsis) shelf["Synopsis"] = shortSynopsis(book.synopsis);
       if (book.pages) shelf["Pages"] = book.pages;
       if (book.language) { if (langListed) shelf["Language"] = book.language; else shelf["Suggested Language"] = book.language; }
       if (book.cover) shelf["Cover URL"] = book.cover;
@@ -528,7 +554,7 @@
         </div>
       </article>`;
       wireFormLink($('[data-lookup="addBook"]', out), "addBook", shelf);
-      wireFormLink($('[data-lookup="recommend"]', out), "recommend", { "Book title": book.title, "Author": book.authors.join(", ") });
+      wireFormLink($('[data-lookup="recommend"]', out), "recommend", { "Book title": plainText(book.title), "Author": plainText(book.authors.join(", ")) });
     });
   }
 
