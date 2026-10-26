@@ -99,6 +99,31 @@
     };
   }
 
+  const api = () => cfg.baserowApi.replace(/\/$/, "");
+
+  async function fetchTable(tableId) {
+    let url = `${api()}/api/database/rows/table/${tableId}/?user_field_names=true&size=200`;
+    const rows = [];
+    while (url) {
+      const res = await fetch(url, { headers: { Authorization: `Token ${cfg.baserowToken}` } });
+      if (!res.ok) throw new Error(`Baserow returned ${res.status}`);
+      const data = await res.json();
+      rows.push(...data.results);
+      url = data.next ? data.next.replace(/^http:/, "https:") : null;
+    }
+    return rows;
+  }
+
+  // Rows of a publicly shared grid view: only the fields visible in that view are ever sent
+  async function fetchPublicView(link) {
+    const slug = (link.match(/public\/grid\/([^/?#]+)/) || link.match(/([A-Za-z0-9_-]{20,})\/?$/) || [])[1];
+    if (!slug) throw new Error("Members view link not recognised");
+    const info = await fetch(`${api()}/api/database/views/${slug}/public/info/`).then((r) => r.json());
+    const names = Object.fromEntries((info.fields || []).map((f) => [`field_${f.id}`, f.name]));
+    const data = await fetch(`${api()}/api/database/views/grid/${slug}/public/rows/?size=200`).then((r) => r.json());
+    return (data.results || []).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [names[k] || k, v])));
+  }
+
   async function fetchBooks() {
     if (!cfg.baserowToken) {
       const res = await fetch("data/sample.json");
@@ -198,6 +223,40 @@
       `<button type="button" data-open="${b.id}" aria-label="${esc(b.title)}">${coverHtml(b, true)}</button>`).join("");
   }
 
+  function renderWishlist(rows) {
+    const el = $("#wishlist");
+    const items = rows
+      .filter((r) => (r["Recommendation"] || "").trim())
+      .sort((a, b) => b.id - a.id)
+      .map((r) => {
+        const by = values(r["Member"]);
+        return `<li>
+          <h3>${esc(r["Recommendation"])}</h3>
+          ${r["Author"] ? `<p class="wish__author">${esc(r["Author"])}</p>` : ""}
+          ${r["Why read it"] ? `<p class="wish__why">${esc(r["Why read it"])}</p>` : ""}
+          ${by.length ? `<p class="wish__by">Recommended by ${esc(by.join(", "))}</p>` : ""}
+        </li>`;
+      });
+    el.innerHTML = items.length ? items.join("") : `<li class="empty">Nothing yet – be the first to recommend a book.</li>`;
+  }
+
+  function renderMembers(rows) {
+    const monthYear = (d) => d ? new Date(d).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "";
+    const items = rows
+      .filter((r) => (r["Username"] || "").trim())
+      .map((r) => {
+        const name = r["Username"].trim();
+        const photo = (r["Profile photo"] || []).find((f) => f.is_image !== false);
+        const since = monthYear(r["Joined Date"]);
+        return `<li>
+          <div class="member__photo">${photo ? `<img src="${esc(photo.url)}" alt="" loading="lazy">` : initial(name)}</div>
+          <strong>${esc(name)}</strong>
+          ${since ? `<span>Member since ${esc(since)}</span>` : ""}
+        </li>`;
+      });
+    $("#members-list").innerHTML = items.join("");
+  }
+
   function openBook(id) {
     const b = state.books.find((x) => String(x.id) === String(id));
     if (!b) return;
@@ -294,12 +353,34 @@
       n.textContent = "We couldn't load the catalogue just now. Please try again in a moment.";
       return;
     }
+    loadExtras();
     renderFilters();
     renderGrid();
     renderHero();
 
     const m = location.hash.match(/^#book-(\d+)$/);
     if (m) openBook(m[1]);
+  }
+
+  async function loadExtras() {
+    if (cfg.baserowToken && cfg.wishListTableId) {
+      fetchTable(cfg.wishListTableId).then(renderWishlist).catch((e) => {
+        console.warn("Wish list not loaded", e);
+        $("#wishlist").innerHTML = `<li class="empty">The wish list will appear here soon.</li>`;
+      });
+    } else {
+      renderWishlist([]);
+    }
+    if (cfg.membersViewLink) {
+      fetchPublicView(cfg.membersViewLink).then(renderMembers).catch((e) => {
+        console.warn("Members not loaded", e);
+        $("#members").hidden = true;
+        $$('a[href="#members"]').forEach((a) => (a.hidden = true));
+      });
+    } else {
+      $("#members").hidden = true;
+      $$('a[href="#members"]').forEach((a) => (a.hidden = true));
+    }
   }
 
   document.addEventListener("DOMContentLoaded", init);

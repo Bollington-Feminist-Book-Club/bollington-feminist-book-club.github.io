@@ -8,11 +8,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20261026e">
+  <link rel="stylesheet" href="styles.css?v=20261026f">
   <script>
     try { if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark"); } catch (e) {}
   </script>
-  <script src="config.js?v=20261026e"></script>
+  <script src="config.js?v=20261026f"></script>
 </head>
 <body>
   <a class="skip" href="#books">Skip to the books</a>
@@ -22,7 +22,9 @@
       <a class="logo" href="#top" data-club-name>Bollington Feminist Book Club</a>
       <nav class="nav" aria-label="Main">
         <a href="#books">Books</a>
-        <a href="#about">About</a>
+        <a href="#wishlist" class="nav__extra">Wish list</a>
+        <a href="#members">Members</a>
+        <a href="#about" class="nav__extra">About</a>
         <a href="#join">Join</a>
         <button class="theme-toggle" type="button" aria-label="Switch between light and dark">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
@@ -78,6 +80,22 @@
     </section>
 
 
+    <section id="wishlist" class="section container">
+      <div class="section__head">
+        <h2 class="section__title">On our wish list</h2>
+        <a class="section__link" data-form="recommend" href="#">Recommend a book</a>
+      </div>
+      <p class="section__intro">Books members want to read that nobody has on their shelf yet. If you own one, add it to the catalogue.</p>
+      <ul class="wishlist" id="wishlist"></ul>
+    </section>
+
+    <section id="members" class="section container">
+      <div class="section__head">
+        <h2 class="section__title">Our members</h2>
+      </div>
+      <ul class="members" id="members-list"></ul>
+    </section>
+
     <section id="about" class="section container about">
       <div class="section__head">
         <h2 class="section__title">Forget reading lists</h2>
@@ -118,6 +136,6 @@
     <div class="dialog__body" id="d-body"></div>
   </dialog>
 
-  <script src="app.js?v=20261026e"></script>
+  <script src="app.js?v=20261026f"></script>
 </body>
 </html>
