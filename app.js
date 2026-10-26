@@ -442,6 +442,8 @@
     const ed = await getJson(`https://openlibrary.org/isbn/${isbn}.json`);
     if (!ed) return null;
     const out = { title: ed.title || "", pages: ed.number_of_pages || null, authors: [], synopsis: "", language: "" };
+    const pf = String(ed.physical_format || "");
+    out.format = /hard|cloth/i.test(pf) ? "Hardcover" : /paper|soft|trade/i.test(pf) ? "Paperback" : "";
     const langKey = ((ed.languages || [])[0] || {}).key;
     if (langKey) out.language = LANGS[langKey.split("/").pop()] || langKey.split("/").pop();
     const workKey = ((ed.works || [])[0] || {}).key;
@@ -484,6 +486,7 @@
       pages: a.pages || b.pages || null,
       synopsis: (b.synopsis && b.synopsis.length > (a.synopsis || "").length ? b.synopsis : a.synopsis) || "",
       language: a.language || b.language || "",
+      format: a.format || "",
       cover: a.cover || b.cover || "",
       sources: [ol && "Open Library", g && "Google Books"].filter(Boolean)
     };
@@ -560,9 +563,10 @@
       if (book.pages) shelf["Pages"] = book.pages;
       if (book.language) { if (langListed) shelf["Language"] = book.language; else shelf["Suggested Language"] = book.language; }
       if (book.cover) shelf["Cover URL"] = book.cover;
+      if (book.format) shelf["Format"] = book.format;
 
       const preview = { id: "preview", title: book.title, authors: book.authors, cover: book.cover };
-      const facts = [book.language, book.pages ? `${book.pages} pages` : ""].filter(Boolean).join(" · ");
+      const facts = [book.format, book.language, book.pages ? `${book.pages} pages` : ""].filter(Boolean).join(" · ");
       out.innerHTML = `<article class="lookup">
         <div class="lookup__cover">${coverHtml(preview, true)}</div>
         <div>
@@ -575,7 +579,7 @@
             <a class="button" data-lookup="addBook">I own it – add it to the shelves</a>
             <a class="button button--quiet" data-lookup="recommend">I want to read it – add to the wish list</a>
           </div>
-          <p class="dialog__hint">Details from ${esc(book.sources.join(" and "))}. Anything missing or wrong can be fixed on the form.</p>
+          <p class="dialog__hint">Details from ${esc(book.sources.join(" and "))}. Anything missing or wrong can be fixed on the form. ${book.synopsis ? "The synopsis isn't copied onto the form – the website shows it automatically from the ISBN." : ""}</p>
         </div>
       </article>`;
       wireFormLink($('[data-lookup="addBook"]', out), "addBook", shelf);
