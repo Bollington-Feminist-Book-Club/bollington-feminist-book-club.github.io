@@ -6,7 +6,7 @@ window.BOOKCLUB_CONFIG = {
 
   // Read-only Baserow database token.
   // Create it in Baserow: Settings → Database tokens → Create token.
-  // Give it READ access to the Catalogue table only – no create, update or delete.
+  // Give it READ access to the Catalogue and Wish list tables only – no create, update or delete.
   // Leave empty to preview the site with sample data.
   baserowToken: "eVc6EMIE0sW3fj3IJUWVt4yCaMswONK7",
 
@@ -20,7 +20,7 @@ window.BOOKCLUB_CONFIG = {
 
   // Public form links from Baserow (open each form view → Share view → copy link)
   forms: {
-    join: "https://baserow.io/form/JyFUBO4jZHg4ZRWKvltvtUQUDOVVJJuRBy9dVzPpQL0",
+    join: "https://baserow.io/form/JyFUBO4jZHg4ZRWKvltvtUQUDOVVJJuRBy9dVzPpQL0",     // "Join the club" form on the Members table
     borrow: "https://baserow.io/form/gHe7Gcha10zhemrbIKBeduWc_j2YxGuARvsgTBEIK60",   // "Borrow a book" form on the Borrowings table
     rate: "https://baserow.io/form/764QzvI0Qz1ynRflAkxudQ4BCkgGOml6EKSV33AxVVc",     // "Give us your rating" form on the Ratings table
     addBook: "https://baserow.io/form/o_3_Ov5bqI5lWHKR6_UM2fcV3MzMXZ_ExzTmzpKe67M",   // "Add a book" form on the Catalogue table

@@ -1,38 +1,103 @@
 # Bollington Feminist Book Club
 
-A swap shelf, not a reading list. This is the public site for the club: a catalogue of books members are sharing, with buttons to borrow, rate and join.
+The public website for the Bollington Feminist Book Club: a catalogue of the books members are sharing, a wish list, a members page and a way to add books by ISBN.
 
-The site is plain HTML, CSS and JavaScript hosted free on GitHub Pages. The data lives in Baserow, which stays the admin back office.
+Live site: https://sitjart.github.io/bollington-book-club/
 
-## How it works
+The site is plain HTML, CSS and JavaScript, hosted free on GitHub Pages. All the data lives in Baserow, which stays the back office: members, books, borrowings, ratings and approvals are all managed there.
 
-- **Catalogue:** read live from the Baserow Catalogue table using a read-only token.
-- **Join, borrow, rate and add a book:** these open the club's existing Baserow forms. Borrow and rate pre-fill the book.
-- **Approvals:** new members arrive as Pending and borrow requests as Requested. Approve them in Baserow.
+## Pages
 
-Member contact details are never read by the site.
+| Page | File | What it does |
+|---|---|---|
+| Home | `index.html` | Intro, the three newest covers, the four newest books and a join button |
+| Books | `books.html` | The full catalogue with search, filters (genre, language, available now) and sorting. Each book opens a panel with its details and Borrow and Rate buttons |
+| Add a book | `add.html` | A member types an ISBN; the site looks the book up and opens the Baserow form already filled in |
+| Wish list | `wishlist.html` | Books members want to read that nobody owns yet |
+| Members | `members.html` | Usernames, profile pictures, join dates and books shared |
+| About | `about.html` | How the club works, when and where, what counts, who we are |
 
-## Setup
+Every page shares the same header and footer, repeated in each file.
 
-All settings live in `config.js`.
+## How the data flows
 
-1. **Read-only token.** In Baserow, go to Settings → Database tokens → Create token. Give it **read** access to the **Catalogue** table only, with no create, update or delete. Paste it into `baserowToken`.
-   The token is visible to anyone who views the page source. That is acceptable only because it can do nothing but read the book list. Never give it any other permission.
-2. **Form links.** For each form view in Baserow, open it, choose Share view and copy the link into `forms` (`borrow`, `rate`, `addBook`). Buttons without a link show as greyed out.
-3. **Switch on Pages.** In the repo, go to Settings → Pages, choose Deploy from a branch and select `main`, folder `/ (root)`.
+The site only ever **reads** from Baserow. Anything that adds or changes data – joining, borrowing, rating, adding or recommending a book – goes through a public Baserow form, so the site never needs permission to write.
 
-With no token, the site shows sample books in preview mode.
+- **Catalogue and wish list** are read with a read-only database token.
+- **Members** are read from a publicly shared Baserow view that shows only safe fields. Emails and phone numbers never reach the site.
+- **Forms** are opened in a new tab. Borrow and Rate pre-fill the book; Add a book pre-fills everything the ISBN lookup found.
+
+### Approvals
+
+- New members arrive with no status. Set **Active** to *Active* in the Members table to approve them.
+- Borrow requests arrive in Borrowings. Set their **Status** to *Borrowed* or *Returned* as books change hands.
+- New books arrive in the Catalogue straight away. Check the author spelling, genres and anything in the *Suggested Genre* or *Suggested Language* columns.
+
+### Usernames
+
+Members choose a username when they join. It's the Members table's first column, so it's what every dropdown and the site show. Real names are kept in the private *Full name* field.
+
+## Adding a book by ISBN
+
+`add.html` looks the ISBN up in two free sources:
+
+1. **Open Library** (openlibrary.org), first for title, author, pages, language and cover.
+2. **Google Books**, to fill anything Open Library lacks. The longer of the two synopses is used.
+
+The member sees a preview, then chooses **I own it** (opens the Add a book form) or **I want to read it** (opens the Recommend a book form). They add their username, format and genres themselves.
+
+A form can't receive an uploaded image, so the cover is saved as a web address in the Catalogue's *Cover URL* field. The site shows covers in this order: an uploaded *Cover photo*, then *Cover URL*, then the Open Library cover for the book's *ISBN*. If none exists, a plain card with the title is shown.
+
+## Settings (`config.js`)
+
+| Setting | What it is |
+|---|---|
+| `clubName` | Shown in the header and browser tab |
+| `baserowToken` | Read-only database token (see below) |
+| `catalogueTableId`, `wishListTableId` | Baserow table IDs |
+| `membersViewLink` | Share link of the *Public members view* in the Members table |
+| `forms` | Share links of the five Baserow forms below |
+
+### The token
+
+Create it in Baserow under My settings → Database tokens. It must have:
+
+- **Read** on **Catalogue** and **Wish list** only
+- **No** create, update or delete permission on anything
+
+The token is visible to anyone who views the page source. That's acceptable only because it can do nothing but read the book list and wish list. Never give it access to Members, and never give it write permissions.
+
+With no token, the site shows three sample books from `data/sample.json`.
+
+### The members view
+
+The *Public members view* must show only **Username**, **Profile photo**, **Joined Date** and **Catalogue**. Hide every other field before sharing it, because sharing exposes whatever is visible. It's filtered to Active members.
+
+### The forms
+
+| Key | Baserow table | Form view |
+|---|---|---|
+| `join` | Members | Join the club |
+| `borrow` | Borrowings | Borrow a book |
+| `rate` | Ratings | Give us your rating |
+| `addBook` | Catalogue | Add a book |
+| `recommend` | Wish list | Recommend a book |
+
+To get a link: open the form view in Baserow → Share view → copy. A button with no link shows greyed out.
+
+Pre-filling uses the **table field names**, not the questions' labels on the form. Renaming a field in Baserow (for example *Book title* or *Cover URL*) will stop that field pre-filling until `app.js` is updated to match.
+
+## Making changes
+
+Edit files directly on GitHub (pencil icon) or locally, then commit to `main`. The *Deploy Jekyll* GitHub Action publishes the site in about a minute; check the Actions tab if a change doesn't appear.
+
+Browsers keep old copies of `styles.css`, `app.js` and `config.js`. After changing any of them, change the `?v=` value on the lines that load them in **every** `.html` file (any new value works), so visitors get the new version straight away.
 
 ## Files
 
-- `index.html` – home page
-- `add.html` – add a book by ISBN (looks it up in Open Library, then Google Books for anything missing, and opens the Baserow form pre-filled)
-- `books.html`, `wishlist.html`, `members.html`, `about.html` – the other pages (each repeats the same header and footer)
-- `styles.css` – design
-- `app.js` – loads the catalogue, filters, book details
+- `index.html`, `books.html`, `add.html`, `wishlist.html`, `members.html`, `about.html` – the pages
+- `styles.css` – design (Playfair Display and Source Sans 3, coral and indigo, light and dark mode)
+- `app.js` – loads data from Baserow, renders the pages, ISBN lookup, form links
 - `config.js` – settings
 - `data/sample.json` – sample books for preview mode
-
-## After editing styles.css, app.js or config.js
-
-Browsers keep old copies of these files. In every `.html` page, change the `?v=` number on the three lines that load them (any new value works) so visitors get the new version straight away.
+- `.github/workflows/jekyll-gh-pages.yml` – deployment
