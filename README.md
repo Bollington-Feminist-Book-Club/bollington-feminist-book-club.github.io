@@ -4,6 +4,8 @@ The public website for the Bollington Feminist Book Club: a catalogue of the boo
 
 Live site: https://sitjart.github.io/bollington-book-club/
 
+Contact: bollyfem-bookclub@googlegroups.com
+
 The site is plain HTML, CSS and JavaScript, hosted free on GitHub Pages. All the data lives in Baserow, which stays the back office: members, books, borrowings, ratings and approvals are all managed there.
 
 ## Pages

@@ -448,3 +448,4 @@ select::-ms-expand { display: none; }
 :root[data-reading="easy"] .book__author { white-space: normal; }
 :root[data-reading="easy"] .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 :root[data-reading="easy"] .nav { gap: 14px; }
+.footer a[href^="mailto"] { overflow-wrap: anywhere; }
