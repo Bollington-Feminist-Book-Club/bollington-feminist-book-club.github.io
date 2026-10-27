@@ -2,7 +2,7 @@
 
 The public website for the Bollington Feminist Book Club: a catalogue of the books members are sharing, a wish list, a members page and a way to add books by ISBN.
 
-Live site: https://sitjart.github.io/bollington-book-club/
+Live site: https://bollington-feminist-book-club.github.io/
 
 Contact: bollyfem-bookclub@googlegroups.com
 
