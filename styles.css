@@ -100,6 +100,19 @@ p { margin: 0 0 1em; }
   .hero__stack button { width: 36%; }
 }
 
+/* Faint line-art faces behind the home page hero, fading out downwards */
+body[data-page="home"] .header { position: relative; z-index: 1; }
+body[data-page="home"] main { position: relative; isolation: isolate; }
+body[data-page="home"] main::before {
+  content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: -150px; height: 820px; pointer-events: none;
+  background: var(--text); opacity: .07;
+  -webkit-mask: url("assets/lines.png") center top / 640px repeat, linear-gradient(#000 45%, transparent);
+  -webkit-mask-composite: source-in;
+  mask: url("assets/lines.png") center top / 640px repeat, linear-gradient(#000 45%, transparent);
+  mask-composite: intersect;
+}
+:root[data-theme="dark"] body[data-page="home"] main::before { background: var(--brand); opacity: .09; }
+
 /* Buttons */
 .button {
   display: inline-block; padding: 12px 26px; border-radius: var(--radius); border: 0;
