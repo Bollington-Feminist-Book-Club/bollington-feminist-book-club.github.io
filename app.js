@@ -254,7 +254,7 @@
           <div class="card__body">
             ${r["Author"] ? `<p class="card__author">${esc(r["Author"])}</p>` : ""}
             ${r["Why read it"] ? `<p class="card__why">${esc(r["Why read it"])}</p>` : ""}
-            ${by.length ? `<p class="card__by">Wanted by ${esc(by.join(", "))}</p>` : ""}
+            ${by.length ? `<p class="card__by">Recommended by ${esc(by.join(", "))}</p>` : ""}
           </div>
         </li>`;
       });
