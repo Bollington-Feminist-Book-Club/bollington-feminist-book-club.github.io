@@ -95,6 +95,12 @@ To get a link: open the form view in Baserow → Share view → copy. A button w
 
 Pre-filling uses the **table field names**, not the questions' labels on the form. Renaming a field in Baserow (for example *Book title* or *Cover URL*) will stop that field pre-filling until `app.js` is updated to match.
 
+## Reading comfort
+
+The site follows the British Dyslexia Association's style guide by default: sans-serif body text, generous line spacing, no italics or typewriter type for reading text, nothing smaller than 15px, left-aligned paragraphs, an off-white background, and the line-art pattern kept out from behind any text (and hidden on narrower screens).
+
+The **Aa** button in the header switches on *Easier reading* for anyone who wants more: larger text, extra letter and word spacing (the WCAG text-spacing values), shorter lines, sans-serif headings and no background patterns or textures. Like dark mode, it's remembered on that device.
+
 ## Making changes
 
 Edit files directly on GitHub (pencil icon) or locally, then commit to `main`. The *Deploy Jekyll* GitHub Action publishes the site in about a minute; check the Actions tab if a change doesn't appear.

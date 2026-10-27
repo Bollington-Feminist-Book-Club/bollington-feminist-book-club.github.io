@@ -10,7 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
   <script>
-    try { if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark"); } catch (e) {}
+    try {
+      if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      if (localStorage.getItem("reading") === "easy") document.documentElement.setAttribute("data-reading", "easy");
+    } catch (e) {}
   </script>
   <script>
     // Always load the latest code: a new value every minute stops browsers using stale copies
@@ -31,9 +34,13 @@
         <a href="members.html" data-page="members">Members</a>
         <a href="about.html" data-page="about">About</a>
         <a class="button button--small" data-form="join" href="#">Join</a>
-        <button class="theme-toggle" type="button" aria-label="Switch between light and dark">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-        </button>
+        <span class="nav__tools">
+          <button class="read-toggle" type="button" aria-pressed="false" title="Easier reading: bigger, more spaced text with no background patterns">Aa<span class="visually-hidden"> Easier reading</span></button>
+          <button class="theme-toggle" type="button" aria-label="Switch to dark mode">
+            <svg class="i-moon" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+            <svg class="i-sun" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><circle cx="12" cy="12" r="4.5" fill="currentColor"/><g stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></g></svg>
+          </button>
+        </span>
       </nav>
     </div>
   </header>

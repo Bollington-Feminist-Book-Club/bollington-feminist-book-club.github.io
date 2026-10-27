@@ -378,11 +378,32 @@
     on("#m-ratings", "click", openFrom);
     on("#hero-stack", "click", openFrom);
 
+    // Light/dark: the icon shows the mode you'll switch to (moon in light mode, sun in dark mode)
+    const root = document.documentElement;
+    const themeBtn = $(".theme-toggle");
+    const syncTheme = () => {
+      if (!themeBtn) return;
+      const dark = root.getAttribute("data-theme") === "dark";
+      themeBtn.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+      themeBtn.title = dark ? "Light mode" : "Dark mode";
+    };
+    syncTheme();
     on(".theme-toggle", "click", () => {
-      const root = document.documentElement;
       const dark = root.getAttribute("data-theme") !== "dark";
       if (dark) root.setAttribute("data-theme", "dark"); else root.removeAttribute("data-theme");
       try { localStorage.setItem("theme", dark ? "dark" : "light"); } catch (e) {}
+      syncTheme();
+    });
+
+    // Easier reading: bigger, more spaced text and no background patterns
+    const readBtn = $(".read-toggle");
+    const syncReading = () => { if (readBtn) readBtn.setAttribute("aria-pressed", root.getAttribute("data-reading") === "easy" ? "true" : "false"); };
+    syncReading();
+    on(".read-toggle", "click", () => {
+      const easy = root.getAttribute("data-reading") !== "easy";
+      if (easy) root.setAttribute("data-reading", "easy"); else root.removeAttribute("data-reading");
+      try { localStorage.setItem("reading", easy ? "easy" : "normal"); } catch (e) {}
+      syncReading();
     });
 
     const dlg = $("#book-dialog");
