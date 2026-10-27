@@ -124,6 +124,8 @@ Each page loads `styles.css`, `config.js` and `app.js` with a fresh version numb
 - `config.js` – settings
 - `data/sample.json` – sample books for preview mode
 - `assets/cloth-grain.webp` – book-cloth weave, taken from the club's texture photos and recoloured on the page; used for cover-less books and the join band
+- `assets/white-nancy.png`, `assets/white-nancy-bold.png` – the White Nancy logo (fine line for large sizes, heavier line for the header); white ink on transparent so the site colours it
+- `favicon.ico`, `favicon-32.png`, `apple-touch-icon.png`, `assets/icon-192.png`, `assets/icon-512.png`, `site.webmanifest` – browser and home-screen icons (solid White Nancy, cream on indigo)
 - `assets/share.jpg` – link-preview image
 - `join/index.html` – QR-code landing page that counts the scan then opens the home page
 - `sitemap.xml` – list of public pages for search engines
