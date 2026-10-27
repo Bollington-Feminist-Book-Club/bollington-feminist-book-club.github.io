@@ -11,6 +11,10 @@ window.BOOKCLUB_CONFIG = {
   baserowToken: "eVc6EMIE0sW3fj3IJUWVt4yCaMswONK7",
 
   baserowApi: "https://api.baserow.io",
+
+  // Free, cookie-free visitor and QR-scan counts: sign up at goatcounter.com and put your code here
+  // (the "bollingtonbooks" part of bollingtonbooks.goatcounter.com). Leave empty to switch counting off.
+  goatcounter: "",
   catalogueTableId: 938797,
   wishListTableId: 938117,     // the token also needs READ on the Wish list table
   borrowingsTableId: 938123,   // member pages: the token needs READ on Borrowings

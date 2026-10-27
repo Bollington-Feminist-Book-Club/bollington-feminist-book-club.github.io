@@ -95,6 +95,13 @@ To get a link: open the form view in Baserow → Share view → copy. A button w
 
 Pre-filling uses the **table field names**, not the questions' labels on the form. Renaming a field in Baserow (for example *Book title* or *Cover URL*) will stop that field pre-filling until `app.js` is updated to match.
 
+## Being found and counting visits
+
+- **Search engines:** every page has a title, description and canonical address; `sitemap.xml` lists the public pages; the home page describes the club to Google as an organisation in Bollington. `add.html`, `member.html` and `join/` are kept out of search results. Submit `sitemap.xml` in Google Search Console after verifying the site there.
+- **Link previews:** `assets/share.jpg` is the image shown when the link is shared on WhatsApp, Facebook and so on.
+- **Counting:** set `goatcounter` in `config.js` to your free GoatCounter code to count visits (no cookies, no consent banner needed).
+- **QR codes:** point printed QR codes at `join/?from=NAME` (e.g. `join/?from=library`). The page records a scan as `/qr/NAME` in GoatCounter, then sends the visitor to the home page. Use a different NAME for each place a poster goes to see which one works.
+
 ## Reading comfort
 
 The site follows the British Dyslexia Association's style guide by default: sans-serif body text, generous line spacing, no italics or typewriter type for reading text, nothing smaller than 15px, left-aligned paragraphs, an off-white background, and the line-art pattern kept out from behind any text (and hidden on narrower screens).
@@ -115,5 +122,8 @@ Each page loads `styles.css`, `config.js` and `app.js` with a fresh version numb
 - `config.js` – settings
 - `data/sample.json` – sample books for preview mode
 - `assets/cloth-grain.webp` – book-cloth weave, taken from the club's texture photos and recoloured on the page; used for cover-less books and the join band
+- `assets/share.jpg` – link-preview image
+- `join/index.html` – QR-code landing page that counts the scan then opens the home page
+- `sitemap.xml` – list of public pages for search engines
 - `assets/lines.png` – the line-art faces, cut out so the site can colour them (used in the join band)
 - `.github/workflows/jekyll-gh-pages.yml` – deployment

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Bollington Feminist Book Club</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f8efed; color: #141850;
+      font: 18px/1.6 "Source Sans 3", "Source Sans Pro", Helvetica, Arial, sans-serif; text-align: center; padding: 16px; }
+    a { color: #c4573f; font-weight: 600; }
+  </style>
+  <script src="../config.js"></script>
+</head>
+<body>
+  <p>Opening the Bollington Feminist Book Club…<br><a href="../">Continue</a></p>
+  <script>
+    // Scans from posters land here. Each poster can carry its own ?from= label,
+    // e.g. join/?from=library, so GoatCounter shows which poster people scanned.
+    (function () {
+      var from = (new URLSearchParams(location.search).get("from") || "poster").replace(/[^a-z0-9-]/gi, "").slice(0, 30);
+      var done = false;
+      function go() { if (!done) { done = true; location.replace("../?ref=" + encodeURIComponent(from)); } }
+      var code = (window.BOOKCLUB_CONFIG || {}).goatcounter;
+      if (!code) { go(); return; }
+      window.goatcounter = { no_onload: true };
+      var s = document.createElement("script");
+      s.async = true;
+      s.src = "//gc.zgo.at/count.js";
+      s.setAttribute("data-goatcounter", "https://" + code + ".goatcounter.com/count");
+      document.head.appendChild(s);
+      var t = setInterval(function () {
+        if (!window.goatcounter || !window.goatcounter.count) return;
+        clearInterval(t);
+        window.goatcounter.count({ path: "/qr/" + from, title: "QR scan: " + from, event: true });
+        setTimeout(go, 400);
+      }, 50);
+      setTimeout(go, 2000); // never keep anyone waiting if the counter is slow or blocked
+    })();
+  </script>
+</body>
+</html>

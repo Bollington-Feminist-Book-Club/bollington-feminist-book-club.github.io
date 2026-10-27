@@ -910,8 +910,18 @@
     }
   }
 
+  function loadCounter() {
+    if (!cfg.goatcounter) return;
+    const s = document.createElement("script");
+    s.async = true;
+    s.src = "//gc.zgo.at/count.js";
+    s.setAttribute("data-goatcounter", `https://${cfg.goatcounter}.goatcounter.com/count`);
+    document.head.appendChild(s);
+  }
+
   function init() {
     bind();
+    loadCounter();
     booksReady = loadBooks();
     loadWishlist();
     loadMembers();
