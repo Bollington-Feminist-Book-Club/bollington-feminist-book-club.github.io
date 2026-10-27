@@ -167,7 +167,7 @@
 
   // size "M" for thumbnails, "L" for the book panel – Open Library's large covers are slow
   function coverHtml(b, eager, size = "M") {
-    const src = (b.cover || "").replace(/(covers\.openlibrary\.org\/b\/isbn\/[0-9X]+)-[SML]\.jpg/, `$1-${size}.jpg`);
+    const src = (b.cover || "").replace(/(covers\.openlibrary\.org\/b\/(?:isbn|id)\/[0-9X]+)-[SML]\.jpg/, `$1-${size}.jpg`);
     const img = src
       ? `<img src="${esc(src)}" alt="" decoding="async" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} onload="this.classList.add('is-loaded')" onerror="this.remove()">`
       : "";
@@ -457,8 +457,14 @@
     const authorKeys = (ed.authors || (work && work.authors && work.authors.map((a) => a.author)) || []).map((a) => a && a.key).filter(Boolean);
     const people = await Promise.all(authorKeys.slice(0, 4).map((k) => getJson(`https://openlibrary.org${k}.json`)));
     out.authors = people.filter(Boolean).map((p) => p.name).filter(Boolean);
-    const coverUrl = `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`;
-    out.cover = (await imageExists(coverUrl)) ? coverUrl : "";
+    // Cover: this edition's own, else the edition's cover id, else any cover on the book's main (work) record
+    const candidates = [`https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`];
+    const ids = [...(ed.covers || []), ...((work && work.covers) || [])].filter((id) => id > 0);
+    ids.slice(0, 3).forEach((id) => candidates.push(`https://covers.openlibrary.org/b/id/${id}-L.jpg?default=false`));
+    out.cover = "";
+    for (const url of candidates) {
+      if (await imageExists(url)) { out.cover = url; break; }
+    }
     return out;
   }
 
