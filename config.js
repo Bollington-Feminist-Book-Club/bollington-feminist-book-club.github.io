@@ -12,7 +12,9 @@ window.BOOKCLUB_CONFIG = {
 
   baserowApi: "https://api.baserow.io",
   catalogueTableId: 938797,
-  wishListTableId: 938117,   // the token also needs READ on the Wish list table
+  wishListTableId: 938117,     // the token also needs READ on the Wish list table
+  borrowingsTableId: 938123,   // member pages: the token needs READ on Borrowings
+  ratingsTableId: 938122,      // member pages: the token needs READ on Ratings
 
   // Public link to the "Public members" view in Baserow (Share view → copy link).
   // Hide every field in that view except Username, Profile photo and Joined Date first.

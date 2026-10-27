@@ -14,7 +14,8 @@ The site is plain HTML, CSS and JavaScript, hosted free on GitHub Pages. All the
 | Books | `books.html` | The full catalogue with search, filters (genre, language, available now) and sorting. Each book opens a panel with its details and Borrow and Rate buttons |
 | Add a book | `add.html` | A member types an ISBN; the site looks the book up and opens the Baserow form already filled in |
 | Wish list | `wishlist.html` | Books members want to read that nobody owns yet |
-| Members | `members.html` | Usernames, profile pictures, join dates and books shared |
+| Members | `members.html` | Usernames, profile pictures, join dates and books shared. Each links to that member's page |
+| Member | `member.html?u=Name` | One member's shelf, what they're borrowing now, past loans and their ratings |
 | About | `about.html` | How the club works, when and where, what counts, who we are |
 
 Every page shares the same header and footer, repeated in each file.
@@ -23,7 +24,7 @@ Every page shares the same header and footer, repeated in each file.
 
 The site only ever **reads** from Baserow. Anything that adds or changes data – joining, borrowing, rating, adding or recommending a book – goes through a public Baserow form, so the site never needs permission to write.
 
-- **Catalogue and wish list** are read with a read-only database token.
+- **Catalogue, wish list, borrowings and ratings** are read with a read-only database token. Borrowings and ratings only feed the member pages.
 - **Members** are read from a publicly shared Baserow view that shows only safe fields. Emails and phone numbers never reach the site.
 - **Forms** are opened in a new tab. Borrow and Rate pre-fill the book; Adding a book happens on our own page and is submitted directly to the Baserow form.
 
@@ -51,13 +52,17 @@ The member sees a preview, then chooses:
 
 The cover is saved as a web address in the Catalogue's *Cover URL* field (forms can't receive an uploaded image this way). The site shows covers in this order: an uploaded *Cover photo*, then *Cover URL*, then the Open Library cover for the book's *ISBN*. If none exists, a plain card with the title is shown. If a book has no synopsis saved, its panel on the site fetches one by ISBN.
 
+### Spam protection
+
+The on-page add form has two traps: a hidden box that only bots fill in, and a minimum time to complete the form. A proper captcha isn't possible on a site with no server, because a captcha has to be checked on a server, and Baserow's public forms can be posted to directly anyway. The real safeguard is reviewing new rows in Baserow.
+
 ## Settings (`config.js`)
 
 | Setting | What it is |
 |---|---|
 | `clubName` | Shown in the header and browser tab |
 | `baserowToken` | Read-only database token (see below) |
-| `catalogueTableId`, `wishListTableId` | Baserow table IDs |
+| `catalogueTableId`, `wishListTableId`, `borrowingsTableId`, `ratingsTableId` | Baserow table IDs |
 | `membersViewLink` | Share link of the *Public members view* in the Members table |
 | `forms` | Share links of the five Baserow forms below |
 
@@ -65,10 +70,10 @@ The cover is saved as a web address in the Catalogue's *Cover URL* field (forms 
 
 Create it in Baserow under My settings → Database tokens. It must have:
 
-- **Read** on **Catalogue** and **Wish list** only
+- **Read** on **Catalogue**, **Wish list**, **Borrowings** and **Ratings** only
 - **No** create, update or delete permission on anything
 
-The token is visible to anyone who views the page source. That's acceptable only because it can do nothing but read the book list and wish list. Never give it access to Members, and never give it write permissions.
+The token is visible to anyone who views the page source. That's acceptable only because it can do nothing but read those four tables, none of which holds contact details. Never give it access to Members, and never give it write permissions.
 
 With no token, the site shows three sample books from `data/sample.json`.
 
@@ -98,7 +103,7 @@ Each page loads `styles.css`, `config.js` and `app.js` with a fresh version numb
 
 ## Files
 
-- `index.html`, `books.html`, `add.html`, `wishlist.html`, `members.html`, `about.html` – the pages
+- `index.html`, `books.html`, `add.html`, `wishlist.html`, `members.html`, `member.html`, `about.html` – the pages
 - `styles.css` – design (Playfair Display and Source Sans 3, coral and indigo, light and dark mode)
 - `app.js` – loads data from Baserow, renders the pages, ISBN lookup, form links
 - `config.js` – settings

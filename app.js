@@ -261,12 +261,12 @@
         const photo = (r["Profile photo"] || []).find((f) => f.is_image !== false);
         const since = monthYear(r["Joined Date"]);
         const shared = Array.isArray(r["Catalogue"]) ? r["Catalogue"].length : 0;
-        return `<li>
+        return `<li><a class="member__link" href="member.html?u=${encodeURIComponent(name)}">
           <div class="member__photo">${photo ? `<img src="${esc(photo.url)}" alt="" loading="lazy">` : initial(name)}</div>
           <strong>${esc(name)}</strong>
           ${since ? `<span>Member since ${esc(since)}</span>` : ""}
           ${shared ? `<span class="member__shared">${shared} ${shared === 1 ? "book" : "books"} shared</span>` : ""}
-        </li>`;
+        </a></li>`;
       });
     $("#members-list").innerHTML = items.join("");
   }
@@ -340,7 +340,8 @@
     const page = document.body.dataset.page;
     const titles = { books: "Books", wishlist: "Wish list", members: "Members", about: "About", add: "Add a book" };
     document.title = titles[page] ? `${titles[page]} – ${cfg.clubName}` : cfg.clubName || document.title;
-    $$(".nav a[data-page]").forEach((a) => { if (a.dataset.page === page) a.setAttribute("aria-current", "page"); });
+    const navPage = page === "member" ? "members" : page;
+    $$(".nav a[data-page]").forEach((a) => { if (a.dataset.page === navPage) a.setAttribute("aria-current", "page"); });
     if ($("#year")) $("#year").textContent = new Date().getFullYear();
     $$("[data-form]").forEach((a) => wireFormLink(a, a.dataset.form));
 
@@ -356,6 +357,10 @@
     };
     on("#grid", "click", openFrom);
     on("#grid-latest", "click", openFrom);
+    on("#m-shelf", "click", openFrom);
+    on("#m-active", "click", openFrom);
+    on("#m-past", "click", openFrom);
+    on("#m-ratings", "click", openFrom);
     on("#hero-stack", "click", openFrom);
 
     on(".theme-toggle", "click", () => {
@@ -383,7 +388,7 @@
   }
 
   async function loadBooks() {
-    if (!$("#grid") && !$("#grid-latest") && !$("#hero-stack")) return;
+    if (!$("#grid") && !$("#grid-latest") && !$("#hero-stack") && !$("#m-shelf")) return;
     skeleton($("#grid"));
     skeleton($("#grid-latest"));
     try {
@@ -570,7 +575,7 @@
     return formMetaPromise;
   }
 
-  const SKIP_TYPES = ["file"];
+  const SKIP_TYPES = [];
   const HIDDEN_FIELDS = ["Cover URL"];
 
   function fieldHtml(f, value) {
@@ -583,6 +588,11 @@
     const v = value == null ? "" : value;
 
     if (HIDDEN_FIELDS.includes(f.field.name)) return `<input type="hidden" id="${id}" value="${esc(v)}">`;
+    if (type === "file") {
+      return `<div class="sf__row">${label}
+        <input id="${id}" type="file" accept="image/*" class="sf__file">
+        <div class="sf__preview" id="${id}-preview" hidden></div></div>`;
+    }
     if (type === "long_text") return `<div class="sf__row">${label}<textarea id="${id}" rows="7" ${req}>${esc(v)}</textarea></div>`;
     if (type === "number") return `<div class="sf__row sf__row--short">${label}<input id="${id}" type="number" min="0" value="${esc(v)}" ${req}></div>`;
     if (type === "single_select") {
@@ -608,6 +618,7 @@
     if (type === "multiple_select") return $$(`input[name="${id}"]:checked`).map((i) => Number(i.value));
     const el = document.getElementById(id);
     if (!el) return undefined;
+    if (type === "file") return el.files && el.files[0] ? el.files[0] : null;
     const raw = el.value.trim();
     if (type === "number") return raw === "" ? null : Number(raw);
     if (type === "single_select") return raw === "" ? null : Number(raw);
@@ -631,23 +642,45 @@
       <h2>Add it to the shelves</h2>
       <p class="sf__intro">Check the details, then choose the format, genres and your username.</p>
       ${fields.map((f) => fieldHtml(f, values[f.field.name])).join("")}
+      <div class="sf__hp" aria-hidden="true"><label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
       <p class="sf__error" role="alert" hidden></p>
       <div class="dialog__actions"><button class="button" type="submit">Add to the shelves</button></div>
     </form>`;
 
     const formEl = $("form.sf", box);
+    const openedAt = Date.now();
+
+    // Show the chosen cover photo straight away
+    $$(".sf__file", formEl).forEach((input) => input.addEventListener("change", () => {
+      const prev = document.getElementById(`${input.id}-preview`);
+      const file = input.files && input.files[0];
+      if (!file) { prev.hidden = true; prev.innerHTML = ""; return; }
+      prev.innerHTML = `<img alt="Your cover photo" src="${URL.createObjectURL(file)}">`;
+      prev.hidden = false;
+    }));
+
     formEl.addEventListener("submit", async (e) => {
       e.preventDefault();
       const errEl = $(".sf__error", formEl);
       errEl.hidden = true;
 
+      // Spam traps: a hidden box only bots fill in, and a form sent impossibly fast
+      if (formEl.website.value || Date.now() - openedAt < 4000) {
+        errEl.textContent = "That was very quick – please check the details and try again.";
+        errEl.hidden = false;
+        return;
+      }
+
       const missing = [];
       const payload = {};
+      const uploads = [];
       for (const f of fields) {
         const val = readField(f);
         const empty = val == null || val === "" || (Array.isArray(val) && !val.length);
         if (f.required && empty) missing.push(f.name);
-        if (!empty) payload[`field_${f.field.id}`] = val;
+        if (empty) continue;
+        if (f.field.type === "file") uploads.push([f, val]);
+        else payload[`field_${f.field.id}`] = val;
       }
       if (missing.length) {
         errEl.textContent = `Please fill in: ${missing.join(", ")}.`;
@@ -659,6 +692,15 @@
       btn.disabled = true;
       btn.textContent = "Adding…";
       try {
+        for (const [f, file] of uploads) {
+          if (file.size > 10 * 1024 * 1024) throw new Error("Cover photo is larger than 10 MB");
+          const body = new FormData();
+          body.append("file", file);
+          const up = await fetch(`${api()}/api/database/views/form/${slug}/upload-file/`, { method: "POST", body });
+          if (!up.ok) throw new Error(`Cover upload failed (${up.status})`);
+          const saved = await up.json();
+          payload[`field_${f.field.id}`] = [{ name: saved.name, visible_name: file.name }];
+        }
         const res = await fetch(`${api()}/api/database/views/form/${slug}/submit/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -682,7 +724,9 @@
         });
       } catch (err) {
         console.error(err);
-        errEl.textContent = "Something went wrong and the book wasn't added. Please try again, or tell the organisers.";
+        errEl.textContent = /larger than 10 MB/.test(err.message)
+          ? "That cover photo is too big – please choose one under 10 MB."
+          : "Something went wrong and the book wasn't added. Please try again, or tell the organisers.";
         errEl.hidden = false;
         btn.disabled = false;
         btn.textContent = "Add to the shelves";
@@ -748,12 +792,95 @@
     });
   }
 
+
+  /* ---------- member page ---------- */
+
+  let booksReady = Promise.resolve();
+  const sameName = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+
+  function bookRef(link) {
+    // link is a {id, value} pair from Baserow; open the panel if the book is in the catalogue
+    const known = state.books.find((b) => String(b.id) === String(link.id));
+    return known
+      ? `<button type="button" class="loan__title" data-open="${known.id}">${esc(known.title)}</button>`
+      : `<span class="loan__title">${esc(link.value)}</span>`;
+  }
+
+  async function loadMemberPage() {
+    if (!$("#m-head")) return;
+    const name = new URLSearchParams(location.search).get("u") || "";
+    if (!name) { $("#m-head").innerHTML = `<p class="notice">No member chosen. <a href="members.html">See all members</a>.</p>`; return; }
+    document.title = `${name} – ${cfg.clubName}`;
+
+    // Profile from the public members view (safe fields only)
+    let profile = null;
+    try {
+      const rows = cfg.membersViewLink ? await fetchPublicView(cfg.membersViewLink) : [];
+      profile = rows.find((r) => sameName(r["Username"], name)) || null;
+    } catch (e) { console.warn("Profile not loaded", e); }
+    const photo = profile && (profile["Profile photo"] || []).find((f) => f.is_image !== false);
+    const since = profile && profile["Joined Date"]
+      ? new Date(profile["Joined Date"]).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "";
+    $("#m-head").innerHTML = `
+      <div class="member__photo member__photo--big">${photo ? `<img src="${esc(photo.url)}" alt="">` : initial(name)}</div>
+      <div><h1 class="page__title">${esc(profile ? profile["Username"] : name)}</h1>
+      ${since ? `<p class="page__intro">Member since ${esc(since)}</p>` : ""}</div>`;
+
+    // Their shelf (from the catalogue, already loaded by loadBooks)
+    await booksReady;
+    const shelf = state.books.filter((b) => b.owners.some((o) => sameName(o, name)));
+    $("#m-shelf").innerHTML = shelf.length ? shelf.map(cardHtml).join("") : `<p class="empty">Nothing on the shelf yet.</p>`;
+
+    const soon = (what) => `<li class="empty">${what} will appear here once the website can read them.</li>`;
+
+    // Borrowings
+    try {
+      const rows = (await fetchTable(cfg.borrowingsTableId)).filter((r) => values(r["Member"]).some((m) => sameName(m, name)));
+      const statusOf = (r) => single(r["Status"]) || "Requested";
+      const line = (r) => {
+        const books = (r["Books"] || []).map(bookRef).join(", ") || `<span class="loan__title">A book</span>`;
+        const s = statusOf(r);
+        const when = s === "Returned"
+          ? [r["Borrowed on"] && `borrowed ${fmtDate(r["Borrowed on"])}`, r["Returned on"] && `returned ${fmtDate(r["Returned on"])}`]
+          : s === "Borrowed" ? [r["Borrowed on"] && `since ${fmtDate(r["Borrowed on"])}`]
+          : [r["Request Date"] && `requested ${fmtDate(r["Request Date"])}`];
+        const cls = s === "Borrowed" ? "out" : s === "Returned" ? "available" : "requested";
+        return `<li>${books}<span class="loan__meta"><span class="status status--${cls}">${s === "Borrowed" ? "On loan" : esc(s)}</span>${when.filter(Boolean).map((w) => ` · ${esc(w)}`).join("")}</span></li>`;
+      };
+      const active = rows.filter((r) => statusOf(r) !== "Returned");
+      const past = rows.filter((r) => statusOf(r) === "Returned");
+      $("#m-active").innerHTML = active.length ? active.map(line).join("") : `<li class="empty">Not borrowing anything right now.</li>`;
+      $("#m-past").innerHTML = past.length ? past.map(line).join("") : `<li class="empty">No past loans yet.</li>`;
+    } catch (e) {
+      console.warn("Borrowings not loaded", e);
+      $("#m-active").innerHTML = soon("Loans");
+      $("#m-past").innerHTML = soon("Past loans");
+    }
+
+    // Ratings
+    try {
+      const rows = (await fetchTable(cfg.ratingsTableId)).filter((r) => values(r["Member"]).some((m) => sameName(m, name)));
+      $("#m-ratings").innerHTML = rows.length
+        ? rows.map((r) => {
+            const score = Number(r["Score"]) || 0;
+            const books = (r["Book"] || []).map(bookRef).join(", ") || `<span class="loan__title">A book</span>`;
+            return `<li>${books}<span class="loan__meta">${stars(score, 1)}</span></li>`;
+          }).join("")
+        : `<li class="empty">No ratings yet.</li>`;
+    } catch (e) {
+      console.warn("Ratings not loaded", e);
+      $("#m-ratings").innerHTML = soon("Ratings");
+    }
+  }
+
   function init() {
     bind();
-    loadBooks();
+    booksReady = loadBooks();
     loadWishlist();
     loadMembers();
     bindAddPage();
+    loadMemberPage();
   }
 
   document.addEventListener("DOMContentLoaded", init);
