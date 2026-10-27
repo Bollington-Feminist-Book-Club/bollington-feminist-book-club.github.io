@@ -251,12 +251,52 @@ p { margin: 0 0 1em; }
 
 /* Wish list */
 .section__intro { color: var(--text-alt); max-width: 640px; margin-bottom: 24px; }
-.wishlist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-.wishlist li { background: var(--card); border-radius: var(--radius); padding: 20px 22px; border-left: 4px solid var(--brand); }
-.wishlist h3 { font-size: 20px; margin-bottom: 0; }
-.wishlist .wish__author { color: var(--text-alt); margin-bottom: 8px; }
-.wishlist .wish__why { font-size: 16px; color: var(--text-alt); font-style: italic; margin-bottom: 8px; }
-.wishlist .wish__by { font-size: 14px; color: var(--muted); margin: 0; }
+.wishlist { list-style: none; margin: 0; padding: 8px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 32px 28px; }
+
+/* Wish list as library catalogue cards */
+.card {
+  --paper: #fdf8ec;
+  --rule: rgba(48, 49, 121, .13);
+  --red: #c4573f;
+  --ink: #2a2b55;
+  position: relative;
+  padding: 18px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(circle at 50% calc(100% - 16px), var(--bg) 6px, transparent 6.5px),
+    var(--paper);
+  color: var(--ink);
+  border-radius: 3px;
+  box-shadow: 0 1px 1px rgba(20, 24, 80, .08), 0 10px 22px rgba(20, 24, 80, .09);
+  transform: rotate(-.6deg);
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.card:nth-child(2n) { transform: rotate(.5deg); }
+.card:nth-child(3n) { transform: rotate(-.2deg); }
+.card:hover { transform: rotate(0) translateY(-3px); box-shadow: 0 2px 2px rgba(20, 24, 80, .08), 0 16px 30px rgba(20, 24, 80, .14); }
+.card__top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; min-height: 28px; }
+.card__call, .card__author, .card__by { font-family: "Courier Prime", "Courier New", monospace; }
+.card__call { font-size: 13px; color: rgba(42, 43, 85, .6); letter-spacing: .5px; padding-top: 3px; }
+.card__stamp {
+  font-family: "Courier Prime", "Courier New", monospace; font-weight: 700; font-size: 12px; letter-spacing: .5px;
+  color: var(--red); border: 2px solid var(--red); border-radius: 4px; padding: 1px 7px;
+  transform: rotate(-4deg); opacity: .85; white-space: nowrap;
+}
+.card__title {
+  font-size: 21px; line-height: 1.25; color: var(--ink); margin: 10px 0 0;
+  padding-bottom: 8px; border-bottom: 2px solid var(--red);
+}
+.card__body {
+  flex: 1; min-height: 112px; padding-top: 6px;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 27px, var(--rule) 27px, var(--rule) 28px);
+  background-position: 0 6px;
+}
+.card__author { font-size: 15px; margin: 0; line-height: 28px; }
+.card__why { font-family: var(--serif); font-style: italic; font-size: 16px; line-height: 28px; margin: 0; color: #3d3f73; }
+.card__by { font-size: 13px; line-height: 28px; margin: 0; color: rgba(42, 43, 85, .7); }
+:root[data-theme="dark"] .card { --paper: #efe6d2; --rule: rgba(48, 49, 121, .16); }
+@media (prefers-reduced-motion: reduce) { .card, .card:nth-child(n) { transform: none; } }
 .empty { color: var(--muted); font-style: italic; }
 
 /* Members */

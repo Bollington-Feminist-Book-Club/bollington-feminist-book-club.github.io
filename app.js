@@ -237,16 +237,25 @@
 
   function renderWishlist(rows) {
     const el = $("#wish-items");
+    const stamp = (d) => d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
     const items = rows
       .filter((r) => (r["Book title"] || "").trim())
       .sort((a, b) => b.id - a.id)
       .map((r) => {
         const by = values(r["Recommended by"]);
-        return `<li>
-          <h3>${esc(r["Book title"])}</h3>
-          ${r["Author"] ? `<p class="wish__author">${esc(r["Author"])}</p>` : ""}
-          ${r["Why read it"] ? `<p class="wish__why">${esc(r["Why read it"])}</p>` : ""}
-          ${by.length ? `<p class="wish__by">Recommended by ${esc(by.join(", "))}</p>` : ""}
+        const when = stamp(r["Recommended Date"]);
+        // Library catalogue card: call number, title on the red rule, typed details, date stamp
+        return `<li class="card">
+          <div class="card__top">
+            <span class="card__call">W ${String(r.id).padStart(3, "0")}</span>
+            ${when ? `<span class="card__stamp">${esc(when)}</span>` : ""}
+          </div>
+          <h3 class="card__title">${esc(r["Book title"])}</h3>
+          <div class="card__body">
+            ${r["Author"] ? `<p class="card__author">${esc(r["Author"])}</p>` : ""}
+            ${r["Why read it"] ? `<p class="card__why">${esc(r["Why read it"])}</p>` : ""}
+            ${by.length ? `<p class="card__by">Wanted by ${esc(by.join(", "))}</p>` : ""}
+          </div>
         </li>`;
       });
     el.innerHTML = items.length ? items.join("") : `<li class="empty">Nothing yet – be the first to recommend a book.</li>`;
