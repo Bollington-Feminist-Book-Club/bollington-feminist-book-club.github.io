@@ -171,7 +171,13 @@
     const img = src
       ? `<img src="${esc(src)}" alt="" decoding="async" ${eager ? 'fetchpriority="high"' : 'loading="lazy"'} onload="this.classList.add('is-loaded')" onerror="this.remove()">`
       : "";
-    return `<div class="cover"><span class="cover__fallback">${esc(b.title)}</span>${img}</div>`;
+    // Books without a cover get a cloth binding in one of three house colours, title stamped on
+    let hash = 2166136261;
+    for (const ch of String(b.title)) { hash ^= ch.charCodeAt(0); hash = Math.imul(hash, 16777619); }
+    const tone = ["indigo", "terracotta", "oxblood"][(hash >>> 0) % 3];
+    const author = (b.authors || [])[0] || "";
+    return `<div class="cover cover--${tone}"><span class="cover__fallback"><span class="cover__stamp">
+      <span class="cover__t">${esc(b.title)}</span>${author ? `<span class="cover__a">${esc(author)}</span>` : ""}</span></span>${img}</div>`;
   }
 
   function excerpt(md, n = 220) {

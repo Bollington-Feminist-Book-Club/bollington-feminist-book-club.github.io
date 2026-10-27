@@ -124,10 +124,18 @@ p { margin: 0 0 1em; }
 .status--requested { color: var(--wait); }
 
 /* Cover */
-.cover { position: relative; aspect-ratio: 2 / 3; border-radius: var(--radius); overflow: hidden; background: var(--bg-alt); }
+.cover { position: relative; aspect-ratio: 2 / 3; border-radius: var(--radius); overflow: hidden; --cloth: #303179;
+  container-type: inline-size;
+  background: url("assets/cloth-grain.webp") center / 480px, var(--cloth); background-blend-mode: overlay; }
+.cover--indigo { --cloth: #2f3172; }
+.cover--terracotta { --cloth: #b4513b; }
+.cover--oxblood { --cloth: #7f3340; }
 .cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: transform .4s, opacity .35s; }
 .cover img.is-loaded { opacity: 1; }
-.cover__fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; text-align: center; font-family: var(--serif); font-size: 20px; color: var(--text-alt); }
+.cover__fallback { position: absolute; inset: 0; display: grid; place-items: center; padding: 10%; text-align: center; font-family: var(--serif); color: #f5e6c8; font-size: clamp(11px, 8.5cqw, 24px) !important; }
+.cover__stamp { display: flex; flex-direction: column; gap: .6em; padding: .9em .3em; border-top: 1px solid rgba(245, 230, 200, .6); border-bottom: 1px solid rgba(245, 230, 200, .6); width: 100%; }
+.cover__t { font-size: 1.15em; font-weight: 700; line-height: 1.2; text-shadow: 0 1px 0 rgba(0, 0, 0, .25); overflow-wrap: break-word; hyphens: auto; }
+.cover__a { font-size: .72em; font-style: italic; opacity: .9; }
 
 /* Featured */
 .featured { display: flex; align-items: center; gap: 56px; margin-bottom: 72px; }
@@ -235,11 +243,17 @@ p { margin: 0 0 1em; }
   border-radius: var(--radius); padding: 9px 12px; width: 100%;
 }
 .sf textarea { line-height: 1.5; resize: vertical; }
-.sf__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.sf__chip { display: inline-flex; align-items: center; gap: 6px; font-weight: 400 !important; font-size: 15px !important;
-  background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
-.sf__chip input { accent-color: var(--brand); }
-.sf__chip:has(input:checked) { background: var(--bg-alt); border-color: var(--brand); }
+.sf__chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.sf .sf__chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-weight: 400; font-size: 15px; line-height: 1.2; white-space: nowrap;
+  background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 999px;
+  padding: 8px 16px 8px 12px; cursor: pointer; transition: background .2s, border-color .2s;
+}
+.sf .sf__chip input { margin: 0; width: 16px; height: 16px; accent-color: var(--brand); flex: none; }
+.sf .sf__chip:hover { border-color: var(--brand); }
+.sf .sf__chip:has(input:checked) { background: var(--bg-alt); border-color: var(--brand); font-weight: 600; }
+.sf .sf__chip:has(input:focus-visible) { outline: 3px solid var(--brand); outline-offset: 2px; }
 .req { color: var(--brand); }
 .sf__error { color: var(--busy); font-weight: 600; }
 .sf--done h2 { color: var(--ok); }
@@ -333,10 +347,14 @@ button.loan__title:hover { color: var(--brand); text-decoration: underline; }
 @media (max-width: 860px) { .about__cols { grid-template-columns: 1fr; gap: 28px; } }
 
 /* Join */
-.join { background: var(--bg-alt); padding: 72px 0; text-align: center; }
+.join { position: relative; isolation: isolate; overflow: hidden; padding: 88px 0; text-align: center; color: #f8efed;
+  background: url("assets/cloth-grain.webp") center / 420px, #1f2260; background-blend-mode: overlay; }
+.join::before { content: ""; position: absolute; inset: 0; z-index: -1; background: var(--brand); opacity: .28;
+  -webkit-mask: url("assets/lines.png") center / 560px repeat; mask: url("assets/lines.png") center / 560px repeat; }
+.join h2 { color: #f8efed; }
 .join__inner { max-width: 680px; }
 .join h2 { font-size: clamp(28px, 4vw, 36px); }
-.join p { color: var(--text-alt); margin-bottom: 28px; }
+.join p { color: #e9d3ce; margin-bottom: 28px; }
 
 /* Footer */
 .footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding-top: 32px; padding-bottom: 40px; font-size: 15px; color: var(--muted); }

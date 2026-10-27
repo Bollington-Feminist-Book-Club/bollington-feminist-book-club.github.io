@@ -50,7 +50,7 @@ The member sees a preview, then chooses:
 - **I own it** – a form appears on our own page, built from the Baserow *Add a book* form (its questions, genres and usernames are read from Baserow, so changes there show up automatically). Everything the lookup found is filled in, including the full synopsis. The member picks format, genres and username and presses *Add to the shelves*; the page submits straight to the Baserow form. Nothing goes through a long link, which is what used to trigger Baserow's firewall (HTTP 403).
 - **I want to read it** – opens the Recommend a book form with title and author filled in.
 
-The cover is saved as a web address in the Catalogue's *Cover URL* field (forms can't receive an uploaded image this way). The site shows covers in this order: an uploaded *Cover photo*, then *Cover URL*, then the Open Library cover for the book's *ISBN*. If none exists, a plain card with the title is shown. If a book has no synopsis saved, its panel on the site fetches one by ISBN.
+The cover is saved as a web address in the Catalogue's *Cover URL* field (forms can't receive an uploaded image this way). The site shows covers in this order: an uploaded *Cover photo*, then *Cover URL*, then the Open Library cover for the book's *ISBN*. If none exists, the book gets a cloth binding in indigo, terracotta or oxblood with its title stamped on. If a book has no synopsis saved, its panel on the site fetches one by ISBN.
 
 ### Spam protection
 
@@ -108,4 +108,6 @@ Each page loads `styles.css`, `config.js` and `app.js` with a fresh version numb
 - `app.js` – loads data from Baserow, renders the pages, ISBN lookup, form links
 - `config.js` – settings
 - `data/sample.json` – sample books for preview mode
+- `assets/cloth-grain.webp` – book-cloth weave, taken from the club's texture photos and recoloured on the page; used for cover-less books and the join band
+- `assets/lines.png` – the line-art faces, cut out so the site can colour them (used in the join band)
 - `.github/workflows/jekyll-gh-pages.yml` – deployment
