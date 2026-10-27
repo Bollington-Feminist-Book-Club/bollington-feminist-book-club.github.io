@@ -108,7 +108,7 @@ Pre-filling uses the **table field names**, not the questions' labels on the for
 
 The site follows the British Dyslexia Association's style guide by default: sans-serif body text, generous line spacing, no italics or typewriter type for reading text, nothing smaller than 15px, left-aligned paragraphs, an off-white background, and the line-art pattern kept out from behind any text (and hidden on narrower screens).
 
-The **Aa** button in the header switches on *Easier reading* for anyone who wants more: larger text, extra letter and word spacing (the WCAG text-spacing values), shorter lines, sans-serif headings and no background patterns or textures. Like dark mode, it's remembered on that device.
+The **Aa** button in the header switches on *Easier reading* for anyone who wants more: larger text, extra letter and word spacing (the WCAG text-spacing values), shorter lines, sans-serif headings and no background patterns or textures. The site opens in dark mode; the sun and moon button switches to light. Both choices are remembered on that device.
 
 ## Making changes
 
@@ -119,7 +119,7 @@ Each page loads `styles.css`, `config.js` and `app.js` with a fresh version numb
 ## Files
 
 - `index.html`, `books.html`, `add.html`, `wishlist.html`, `members.html`, `member.html`, `about.html` – the pages
-- `styles.css` – design (Playfair Display and Source Sans 3, coral and indigo, light and dark mode)
+- `styles.css` – design (Playfair Display and Source Sans 3, coral and indigo, dark mode by default, with a light mode)
 - `app.js` – loads data from Baserow, renders the pages, ISBN lookup, form links
 - `config.js` – settings
 - `data/sample.json` – sample books for preview mode

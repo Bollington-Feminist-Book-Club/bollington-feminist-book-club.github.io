@@ -74,10 +74,10 @@ p { margin: 0 0 1em; }
 }
 
 .nav a { white-space: nowrap; }
+/* On smaller screens the club name is hidden (still read out by screen readers) and White Nancy alone links home */
 @media (max-width: 900px) {
-  .header__inner { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .nav { width: 100%; }
-  .theme-toggle { margin-left: auto; }
+  .logo [data-club-name] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .nav { gap: 18px; }
 }
 
 /* White Nancy, drawn in the current text colour so it follows light and dark mode */
@@ -117,19 +117,18 @@ p { margin: 0 0 1em; }
 }
 
 /* Faint line-art faces behind the home page hero, fading out downwards */
+body[data-page="home"] { position: relative; isolation: isolate; }
 body[data-page="home"] .header { position: relative; z-index: 1; }
-body[data-page="home"] main { position: relative; isolation: isolate; }
-@media (max-width: 760px) { body[data-page="home"] main::before { display: none; } }
-body[data-page="home"] main::before {
-  content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: -150px; height: 820px; pointer-events: none;
+@media (max-width: 760px) { body[data-page="home"]::before { display: none; } }
+body[data-page="home"]::before {
+  content: ""; position: absolute; z-index: -1; left: 0; right: 0; top: 0; height: 960px; pointer-events: none;
   background: var(--text); opacity: .07;
   -webkit-mask: url("assets/lines.png") center top / 640px repeat, linear-gradient(#000 45%, transparent), linear-gradient(to right, transparent 0, transparent 46%, #000 62%);
   -webkit-mask-composite: source-in, source-in;
   mask: url("assets/lines.png") center top / 640px repeat, linear-gradient(#000 45%, transparent), linear-gradient(to right, transparent 0, transparent 46%, #000 62%);
   mask-composite: intersect, intersect;
 }
-:root[data-theme="dark"] @media (max-width: 760px) { body[data-page="home"] main::before { display: none; } }
-body[data-page="home"] main::before { background: var(--brand); opacity: .09; }
+:root[data-theme="dark"] body[data-page="home"]::before { background: var(--brand); opacity: .09; }
 
 /* Buttons */
 .button {
@@ -447,7 +446,7 @@ select::-ms-expand { display: none; }
 :root[data-reading="easy"] * { font-style: normal !important; }
 :root[data-reading="easy"] .card__call, :root[data-reading="easy"] .card__stamp { font-family: var(--sans); }
 /* No patterns or textures anywhere */
-:root[data-reading="easy"] main::before, :root[data-reading="easy"] .join::before { display: none !important; }
+:root[data-reading="easy"] body[data-page="home"]::before, :root[data-reading="easy"] .join::before { display: none !important; }
 :root[data-reading="easy"] .join, :root[data-reading="easy"] .cover { background-image: none !important; }
 :root[data-reading="easy"] .card, :root[data-reading="easy"] .card__body { background: var(--paper) !important; transform: none !important; }
 :root[data-reading="easy"] .book__title { -webkit-line-clamp: 3; min-height: 3.75em; }
@@ -455,3 +454,7 @@ select::-ms-expand { display: none; }
 :root[data-reading="easy"] .grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
 :root[data-reading="easy"] .nav { gap: 14px; }
 .footer a[href^="mailto"] { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .nav { gap: 6px 14px; flex-wrap: wrap; justify-content: flex-end; }
+  .nav__tools { margin-left: 0; }
+}
