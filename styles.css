@@ -458,3 +458,8 @@ select::-ms-expand { display: none; }
   .nav { gap: 6px 14px; flex-wrap: wrap; justify-content: flex-end; }
   .nav__tools { margin-left: 0; }
 }
+
+/* Who has a book and how many are queued for it */
+.book__wait { color: var(--wait); }
+.loan-line { font-size: 15px; color: var(--muted); margin: 10px 0 0; }
+.loan-line a { color: var(--text); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }

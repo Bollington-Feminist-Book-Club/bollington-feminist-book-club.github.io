@@ -26,14 +26,14 @@ Every page shares the same header and footer, repeated in each file.
 
 The site only ever **reads** from Baserow. Anything that adds or changes data – joining, borrowing, rating, adding or recommending a book – goes through a public Baserow form, so the site never needs permission to write.
 
-- **Catalogue, wish list, borrowings and ratings** are read with a read-only database token. Borrowings and ratings only feed the member pages.
+- **Catalogue, wish list, borrowings and ratings** are read with a read-only database token. Borrowings also show, on each book, who has it now and how many members are waiting for it; ratings feed the member pages.
 - **Members** are read from a publicly shared Baserow view that shows only safe fields. Emails and phone numbers never reach the site.
 - **Forms** are opened in a new tab. Borrow and Rate pre-fill the book; Adding a book happens on our own page and is submitted directly to the Baserow form.
 
 ### Approvals
 
 - New members arrive with no status. Set **Active** to *Active* in the Members table to approve them.
-- Borrow requests arrive in Borrowings. Set their **Status** to *Borrowed* or *Returned* as books change hands.
+- Borrow requests arrive in Borrowings. Set their **Status** to *Borrowed* or *Returned* as books change hands. A *Requested* row counts as one person waiting; the member on the latest *Borrowed* row is shown as holding the book.
 - New books arrive in the Catalogue straight away. Check the author spelling, genres and anything in the *Suggested Genre* or *Suggested Language* columns.
 
 ### Usernames

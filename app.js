@@ -105,7 +105,10 @@
       owners: values(r["Owner"]),
       rating: avg,
       ratingCount: scores.length,
-      status
+      holder: (r.__loan && r.__loan.holder) || "",
+      since: (r.__loan && r.__loan.since) || "",
+      waiting: (r.__loan && r.__loan.waiting) || 0,
+      status: r.__loan && r.__loan.waiting && status === "available" ? "requested" : status
     };
   }
 
@@ -149,6 +152,22 @@
       rows.push(...data.results);
       url = data.next ? data.next.replace(/^http:/, "https:") : null;
     }
+    // Who has each book now and how many are queued for it, from the Borrowings table
+    if (cfg.borrowingsTableId) {
+      try {
+        const loans = {};
+        for (const l of await fetchTable(cfg.borrowingsTableId)) {
+          const st = single(l["Status"]);
+          for (const bk of l["Books"] || []) {
+            const e = (loans[bk.id] = loans[bk.id] || { holder: "", since: "", waiting: 0 });
+            if (st === "Borrowed" && (!e.since || (l["Borrowed on"] || "") >= e.since)) {
+              e.holder = values(l["Member"])[0] || ""; e.since = l["Borrowed on"] || "";
+            } else if (st === "Requested") e.waiting++;
+          }
+        }
+        rows.forEach((r) => { r.__loan = loans[r.id]; });
+      } catch (e) { console.warn("Borrowings not loaded", e); }
+    }
     return { rows, sample: false };
   }
 
@@ -186,11 +205,11 @@
   }
 
   function cardHtml(b) {
-    return `<button class="book" type="button" data-id="${b.id}" aria-label="${esc(b.title)} by ${esc(b.authors.join(", "))}, ${STATUS_LABEL[b.status]}">
+    return `<button class="book" type="button" data-id="${b.id}" aria-label="${esc(b.title)} by ${esc(b.authors.join(", "))}, ${STATUS_LABEL[b.status]}${b.holder ? ` with ${esc(b.holder)}` : ""}${b.waiting ? `, ${b.waiting} waiting` : ""}">
       ${coverHtml(b)}
       <div class="book__title">${esc(b.title)}</div>
       <div class="book__author">${esc(b.authors.join(", "))}</div>
-      <div class="book__line">${status(b)}${stars(b.rating, b.ratingCount)}</div>
+      <div class="book__line">${status(b)}${b.waiting ? `<span class="book__wait">${b.waiting} waiting</span>` : ""}${stars(b.rating, b.ratingCount)}</div>
     </button>`;
   }
 
@@ -286,6 +305,15 @@
     $("#members-list").innerHTML = items.join("");
   }
 
+  // "With Tiffany since 27 Oct · 2 people waiting"
+  function loanLine(b) {
+    const parts = [];
+    if (b.holder) parts.push(`With <a href="member.html?u=${encodeURIComponent(b.holder)}">${esc(b.holder)}</a>${b.since ? ` since ${esc(new Date(b.since).toLocaleDateString("en-GB", { day: "numeric", month: "short" }))}` : ""}`);
+    if (b.waiting) parts.push(`${b.waiting} ${b.waiting === 1 ? "person" : "people"} waiting`);
+    else if (b.holder) parts.push("nobody waiting yet");
+    return parts.length ? `<p class="loan-line">${parts.join(" · ")}</p>` : "";
+  }
+
   function openBook(id) {
     const b = state.books.find((x) => String(x.id) === String(id));
     if (!b) return;
@@ -304,6 +332,7 @@
         <div class="dialog__synopsis" id="d-synopsis">${renderMarkdown(b.synopsis) || (b.isbn ? '<p class="muted-line">Fetching the synopsis…</p>' : "<p>No synopsis yet.</p>")}</div>
         ${b.owners[0] ? `<div class="meta"><span class="avatar">${initial(b.owners[0])}</span>
           <span><strong>Shared by ${esc(b.owners.join(", "))}</strong>${status(b)}</span></div>` : ""}
+        ${loanLine(b)}
         <div class="dialog__actions">
           <a class="button" data-dialog-form="borrow">${b.status === "available" ? "Borrow this book" : "Ask for it next"}</a>
           <a class="button button--quiet" data-dialog-form="rate">Rate it</a>
