@@ -157,10 +157,14 @@
   // The copy GitHub keeps (refreshed every 30 minutes): instant, with covers stored on the site itself
   let snapshotCovers = {};
   const photoName = (r) => ((r["Cover photo"] || [])[0] || {}).name || "";
+  let snapshotData = null;
+  function getSnapshot() {
+    if (!snapshotData) snapshotData = fetch(`data/snapshot.json?v=${window.__v || ""}`)
+      .then((res) => { if (!res.ok) throw new Error(`No snapshot (${res.status})`); return res.json(); });
+    return snapshotData;
+  }
   async function fetchSnapshot() {
-    const res = await fetch(`data/snapshot.json?v=${window.__v || ""}`);
-    if (!res.ok) throw new Error(`No snapshot (${res.status})`);
-    const data = await res.json();
+    const data = JSON.parse(JSON.stringify(await getSnapshot()));
     snapshotCovers = Object.fromEntries(data.catalogue.filter((r) => r.__cover).map((r) => [r.id, { url: r.__cover, photo: photoName(r) }]));
     return { rows: attachLoans(data.catalogue, data.borrowings || []), sample: false };
   }
@@ -335,17 +339,26 @@
     el.innerHTML = items.length ? items.join("") : `<li class="empty">${target ? "No recommended books match." : "Nothing yet – be the first to recommend a book."}</li>`;
   }
 
+  // The small copy saved on the site, else Baserow's thumbnail – never the full-size original
+  function memberPhoto(r) {
+    if (r.__photo) return r.__photo;
+    const f = (r["Profile photo"] || []).find((x) => x.is_image !== false);
+    if (!f) return "";
+    const t = f.thumbnails || {};
+    return (t.card_cover && t.card_cover.url) || (t.small && t.small.url) || f.url;
+  }
+
   function renderMembers(rows) {
     const monthYear = (d) => d ? new Date(d).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "";
     const items = rows
       .filter((r) => (r["Username"] || "").trim())
       .map((r) => {
         const name = r["Username"].trim();
-        const photo = (r["Profile photo"] || []).find((f) => f.is_image !== false);
+        const photo = memberPhoto(r);
         const since = monthYear(r["Joined Date"]);
         const shared = Array.isArray(r["Catalogue"]) ? r["Catalogue"].length : 0;
         return `<li><a class="member__link" href="member.html?u=${encodeURIComponent(name)}">
-          <div class="member__photo">${photo ? `<img src="${esc(photo.url)}" alt="" loading="lazy">` : initial(name)}</div>
+          <div class="member__photo">${photo ? `<img src="${esc(photo)}" alt="" loading="lazy">` : initial(name)}</div>
           <strong>${esc(name)}</strong>
           ${since ? `<span>Member since ${esc(since)}</span>` : ""}
           ${shared ? `<span class="member__shared">${shared} ${shared === 1 ? "book" : "books"} shared</span>` : ""}
@@ -595,8 +608,18 @@
       if (e) console.warn("Members not loaded", e);
       $("#members-list").innerHTML = `<li class="empty">The members list will appear here soon.</li>`;
     };
-    if (!cfg.membersViewLink) { fail(); return; }
-    fetchPublicView(cfg.membersViewLink).then(renderMembers).catch(fail);
+    let shown = false;
+    getSnapshot().then((d) => { if (d.members && d.members.length) { renderMembers(d.members); shown = true; } }).catch(() => {})
+      .then(() => {
+        if (!cfg.membersViewLink) { if (!shown) fail(); return; }
+        // Live list, keeping the small photos from the copy
+        return fetchPublicView(cfg.membersViewLink).then(async (rows) => {
+          const d = await getSnapshot().catch(() => ({}));
+          const small = Object.fromEntries((d.members || []).map((m) => [m.id, m]));
+          rows.forEach((r) => { const c = small[r.id]; if (c && c.__photo && JSON.stringify(c["Profile photo"]) === JSON.stringify(r["Profile photo"])) r.__photo = c.__photo; });
+          renderMembers(rows);
+        }).catch((e) => { if (!shown) fail(e); });
+      });
   }
 
 
@@ -1064,65 +1087,74 @@
     if (!name) { $("#m-head").innerHTML = `<p class="notice">No member chosen. <a href="members.html">See all members</a>.</p>`; return; }
     document.title = `${name} – ${cfg.clubName}`;
 
-    // Profile from the public members view (safe fields only)
-    let profile = null;
-    try {
-      const rows = cfg.membersViewLink ? await fetchPublicView(cfg.membersViewLink) : [];
-      profile = rows.find((r) => sameName(r["Username"], name)) || null;
-    } catch (e) { console.warn("Profile not loaded", e); }
-    const photo = profile && (profile["Profile photo"] || []).find((f) => f.is_image !== false);
-    const since = profile && profile["Joined Date"]
-      ? new Date(profile["Joined Date"]).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "";
-    $("#m-head").innerHTML = `
-      <div class="member__photo member__photo--big">${photo ? `<img src="${esc(photo.url)}" alt="">` : initial(name)}</div>
-      <div><h1 class="page__title">${esc(profile ? profile["Username"] : name)}</h1>
-      ${since ? `<p class="page__intro">Member since ${esc(since)}</p>` : ""}</div>`;
+    const render = (members, borrowings, ratings) => {
+      // Profile from the public members view (safe fields only)
+      const profile = (members || []).find((r) => sameName(r["Username"], name)) || null;
+      const photo = profile && memberPhoto(profile);
+      const since = profile && profile["Joined Date"]
+        ? new Date(profile["Joined Date"]).toLocaleDateString("en-GB", { month: "long", year: "numeric" }) : "";
+      $("#m-head").innerHTML = `
+        <div class="member__photo member__photo--big">${photo ? `<img src="${esc(photo)}" alt="">` : initial(name)}</div>
+        <div><h1 class="page__title">${esc(profile ? profile["Username"] : name)}</h1>
+        ${since ? `<p class="page__intro">Member since ${esc(since)}</p>` : ""}</div>`;
 
-    // Their shelf (from the catalogue, already loaded by loadBooks)
+      // Their shelf (from the catalogue, loaded by loadBooks)
+      const shelf = state.books.filter((b) => b.owners.some((o) => sameName(o, name)));
+      $("#m-shelf").innerHTML = shelf.length ? shelf.map(cardHtml).join("") : `<p class="empty">Nothing on the shelf yet.</p>`;
+
+      // Borrowings
+      if (borrowings) {
+        const rows = borrowings.filter((r) => values(r["Member"]).some((m) => sameName(m, name)));
+        const statusOf = (r) => single(r["Status"]) || "Requested";
+        const line = (r) => {
+          const books = (r["Books"] || []).map(bookRef).join(", ") || `<span class="loan__title">A book</span>`;
+          const st = statusOf(r);
+          const when = st === "Returned"
+            ? [r["Borrowed on"] && `borrowed ${fmtDate(r["Borrowed on"])}`, r["Returned on"] && `returned ${fmtDate(r["Returned on"])}`]
+            : st === "Borrowed" ? [r["Borrowed on"] && `since ${fmtDate(r["Borrowed on"])}`]
+            : [r["Request Date"] && `requested ${fmtDate(r["Request Date"])}`];
+          const cls = st === "Borrowed" ? "out" : st === "Returned" ? "available" : "requested";
+          return `<li>${books}<span class="loan__meta"><span class="status status--${cls}">${st === "Borrowed" ? "On loan" : esc(st)}</span>${when.filter(Boolean).map((w) => ` · ${esc(w)}`).join("")}</span></li>`;
+        };
+        const active = rows.filter((r) => statusOf(r) !== "Returned");
+        const past = rows.filter((r) => statusOf(r) === "Returned");
+        $("#m-active").innerHTML = active.length ? active.map(line).join("") : `<li class="empty">Not borrowing anything right now.</li>`;
+        $("#m-past").innerHTML = past.length ? past.map(line).join("") : `<li class="empty">No past loans yet.</li>`;
+      }
+
+      // Ratings
+      if (ratings) {
+        const rows = ratings.filter((r) => values(r["Member"]).some((m) => sameName(m, name)));
+        $("#m-ratings").innerHTML = rows.length
+          ? rows.map((r) => {
+              const score = Number(r["Score"]) || 0;
+              const books = (r["Book"] || []).map(bookRef).join(", ") || `<span class="loan__title">A book</span>`;
+              return `<li>${books}<span class="loan__meta">${stars(score, 1)}</span></li>`;
+            }).join("")
+          : `<li class="empty">No ratings yet.</li>`;
+      }
+    };
+
+    // 1. The copy on GitHub: instant
+    let snap = null;
+    try { snap = await getSnapshot(); } catch (e) { /* first visit before any copy: go live */ }
     await booksReady;
-    const shelf = state.books.filter((b) => b.owners.some((o) => sameName(o, name)));
-    $("#m-shelf").innerHTML = shelf.length ? shelf.map(cardHtml).join("") : `<p class="empty">Nothing on the shelf yet.</p>`;
+    if (snap) render(snap.members, snap.borrowings, snap.ratings);
 
+    // 2. Then Baserow, all at once rather than one after another
+    const [members, borrowings, ratings] = await Promise.all([
+      cfg.membersViewLink ? fetchPublicView(cfg.membersViewLink).catch(() => null) : null,
+      cfg.borrowingsTableId ? fetchTable(cfg.borrowingsTableId).catch(() => null) : null,
+      cfg.ratingsTableId ? fetchTable(cfg.ratingsTableId).catch(() => null) : null
+    ]);
+    if (members && snap) {
+      const small = Object.fromEntries((snap.members || []).map((m) => [m.id, m]));
+      members.forEach((r) => { const c = small[r.id]; if (c && c.__photo && JSON.stringify(c["Profile photo"]) === JSON.stringify(r["Profile photo"])) r.__photo = c.__photo; });
+    }
     const soon = (what) => `<li class="empty">${what} will appear here once the website can read them.</li>`;
-
-    // Borrowings
-    try {
-      const rows = (await fetchTable(cfg.borrowingsTableId)).filter((r) => values(r["Member"]).some((m) => sameName(m, name)));
-      const statusOf = (r) => single(r["Status"]) || "Requested";
-      const line = (r) => {
-        const books = (r["Books"] || []).map(bookRef).join(", ") || `<span class="loan__title">A book</span>`;
-        const s = statusOf(r);
-        const when = s === "Returned"
-          ? [r["Borrowed on"] && `borrowed ${fmtDate(r["Borrowed on"])}`, r["Returned on"] && `returned ${fmtDate(r["Returned on"])}`]
-          : s === "Borrowed" ? [r["Borrowed on"] && `since ${fmtDate(r["Borrowed on"])}`]
-          : [r["Request Date"] && `requested ${fmtDate(r["Request Date"])}`];
-        const cls = s === "Borrowed" ? "out" : s === "Returned" ? "available" : "requested";
-        return `<li>${books}<span class="loan__meta"><span class="status status--${cls}">${s === "Borrowed" ? "On loan" : esc(s)}</span>${when.filter(Boolean).map((w) => ` · ${esc(w)}`).join("")}</span></li>`;
-      };
-      const active = rows.filter((r) => statusOf(r) !== "Returned");
-      const past = rows.filter((r) => statusOf(r) === "Returned");
-      $("#m-active").innerHTML = active.length ? active.map(line).join("") : `<li class="empty">Not borrowing anything right now.</li>`;
-      $("#m-past").innerHTML = past.length ? past.map(line).join("") : `<li class="empty">No past loans yet.</li>`;
-    } catch (e) {
-      console.warn("Borrowings not loaded", e);
-      $("#m-active").innerHTML = soon("Loans");
-      $("#m-past").innerHTML = soon("Past loans");
-    }
-
-    // Ratings
-    try {
-      const rows = (await fetchTable(cfg.ratingsTableId)).filter((r) => values(r["Member"]).some((m) => sameName(m, name)));
-      $("#m-ratings").innerHTML = rows.length
-        ? rows.map((r) => {
-            const score = Number(r["Score"]) || 0;
-            const books = (r["Book"] || []).map(bookRef).join(", ") || `<span class="loan__title">A book</span>`;
-            return `<li>${books}<span class="loan__meta">${stars(score, 1)}</span></li>`;
-          }).join("")
-        : `<li class="empty">No ratings yet.</li>`;
-    } catch (e) {
-      console.warn("Ratings not loaded", e);
-      $("#m-ratings").innerHTML = soon("Ratings");
-    }
+    render(members || (snap && snap.members), borrowings || (snap && snap.borrowings), ratings || (snap && snap.ratings));
+    if (!borrowings && !snap) { $("#m-active").innerHTML = soon("Loans"); $("#m-past").innerHTML = soon("Past loans"); }
+    if (!ratings && !snap) $("#m-ratings").innerHTML = soon("Ratings");
   }
 
   function loadCounter() {

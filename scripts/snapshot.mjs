@@ -82,8 +82,20 @@ async function download(url) {
   return sharp(buf).rotate().resize({ width: 480, withoutEnlargement: true }).jpeg({ quality: 82, mozjpeg: true }).toBuffer();
 }
 
+// The members list, from the publicly shared view only (usernames, photos, join dates – never contact details)
+async function publicMembers(link) {
+  const slug = (String(link || "").match(/public\/grid\/([^/?#]+)/) || [])[1];
+  if (!slug) return [];
+  const info = await (await fetch(`${API}/api/database/views/${slug}/public/info/`)).json();
+  const names = Object.fromEntries((info.fields || []).map((f) => [`field_${f.id}`, f.name]));
+  const data = await (await fetch(`${API}/api/database/views/grid/${slug}/public/rows/?size=200`)).json();
+  return (data.results || []).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [names[k] || k, v])));
+}
+
 const catalogue = await table(cfg.catalogueTableId);
 const borrowings = cfg.borrowingsTableId ? await table(cfg.borrowingsTableId) : [];
+const ratings = cfg.ratingsTableId ? await table(cfg.ratingsTableId).catch(() => []) : [];
+const members = await publicMembers(cfg.membersViewLink).catch((e) => { console.warn(`Members not copied: ${e.message}`); return []; });
 
 fs.mkdirSync(COVER_DIR, { recursive: true });
 const sources = fs.existsSync(SOURCES) ? JSON.parse(fs.readFileSync(SOURCES, "utf8")) : {};
@@ -122,9 +134,36 @@ for (const f of fs.readdirSync(COVER_DIR)) {
   if (f.endsWith(".jpg") && !keep.has(f)) fs.unlinkSync(path.join(COVER_DIR, f));
 }
 
+// Member photos, made small: the originals can be several megabytes each
+const PHOTO_DIR = path.join(ROOT, "assets", "members");
+fs.mkdirSync(PHOTO_DIR, { recursive: true });
+const keepPhotos = new Set();
+for (const m of members) {
+  const photo = (m["Profile photo"] || []).find((f) => f.is_image !== false);
+  if (!photo) continue;
+  const file = `${m.id}.jpg`, dest = path.join(PHOTO_DIR, file);
+  const key = `member:${m.id}`;
+  if (!sources[key] || sources[key].basis !== photo.name || !fs.existsSync(dest)) {
+    try {
+      const res = await fetch(photo.url);
+      if (res.ok) {
+        const buf = Buffer.from(await res.arrayBuffer());
+        fs.writeFileSync(dest, await sharp(buf).rotate().resize({ width: 240, height: 240, fit: "cover" }).jpeg({ quality: 82, mozjpeg: true }).toBuffer());
+        sources[key] = { basis: photo.name, src: photo.url };
+      }
+    } catch (e) { console.warn(`Photo for ${m["Username"]} failed: ${e.message}`); }
+  }
+  if (fs.existsSync(dest)) {
+    keepPhotos.add(file);
+    m.__photo = `assets/members/${file}?${crypto.createHash("sha1").update(photo.name || "").digest("hex").slice(0, 8)}`;
+  }
+}
+for (const f of fs.readdirSync(PHOTO_DIR)) if (f.endsWith(".jpg") && !keepPhotos.has(f)) fs.unlinkSync(path.join(PHOTO_DIR, f));
+
 fs.mkdirSync(path.dirname(SNAPSHOT), { recursive: true });
-fs.writeFileSync(SNAPSHOT, JSON.stringify({ catalogue, borrowings }));
+fs.writeFileSync(SNAPSHOT, JSON.stringify({ catalogue, borrowings, ratings, members }));
 const ids = new Set(catalogue.map((r) => String(r.id)));
+for (const m of members) ids.add(`member:${m.id}`);
 for (const id of Object.keys(sources)) if (!ids.has(id)) delete sources[id];
 fs.writeFileSync(SOURCES, JSON.stringify(sources, null, 1));
-console.log(`${catalogue.length} books, ${borrowings.length} borrowings, ${keep.size} covers (${fetched} fetched)`);
+console.log(`${catalogue.length} books, ${borrowings.length} borrowings, ${ratings.length} ratings, ${members.length} members, ${keep.size} covers (${fetched} fetched), ${keepPhotos.size} member photos`);

@@ -139,7 +139,8 @@ Each page loads `styles.css`, `config.js` and `app.js` with a fresh version numb
 
 Every 30 minutes, and on every push, the deploy workflow (`.github/workflows/jekyll-gh-pages.yml`) runs `scripts/snapshot.mjs`, which:
 
-- copies the Catalogue and Borrowings tables from Baserow into `data/snapshot.json`;
+- copies the Catalogue, Borrowings and Ratings tables, and the public members view, from Baserow into `data/snapshot.json`;
+- saves small copies of member photos into `assets/members/` (240 px);
 - saves every book's cover into `assets/covers/` (480 px JPEGs). The cover comes from, in order: a photo uploaded to **Cover photo** in Baserow, the **Cover URL** field, Google Books for the ISBN, then Open Library. Each cover is fetched once and only looked up again when that book's photo, link or ISBN changes; `data/cover-sources.json` records where each came from;
 - saves those files back to the repo and republishes the site – a scheduled run with nothing new doesn't republish.
 
