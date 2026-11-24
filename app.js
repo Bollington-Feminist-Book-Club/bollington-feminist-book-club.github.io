@@ -156,11 +156,12 @@
 
   // The copy GitHub keeps (refreshed every 30 minutes): instant, with covers stored on the site itself
   let snapshotCovers = {};
+  const photoName = (r) => ((r["Cover photo"] || [])[0] || {}).name || "";
   async function fetchSnapshot() {
     const res = await fetch(`data/snapshot.json?v=${window.__v || ""}`);
     if (!res.ok) throw new Error(`No snapshot (${res.status})`);
     const data = await res.json();
-    snapshotCovers = Object.fromEntries(data.catalogue.filter((r) => r.__cover).map((r) => [r.id, r.__cover]));
+    snapshotCovers = Object.fromEntries(data.catalogue.filter((r) => r.__cover).map((r) => [r.id, { url: r.__cover, photo: photoName(r) }]));
     return { rows: attachLoans(data.catalogue, data.borrowings || []), sample: false };
   }
 
@@ -172,7 +173,11 @@
       return { rows: data.results, sample: true };
     }
     const rows = await fetchTable(cfg.catalogueTableId);
-    rows.forEach((r) => { if (snapshotCovers[r.id]) r.__cover = snapshotCovers[r.id]; });
+    // Use the copied cover unless someone has uploaded a different photo since the copy was made
+    rows.forEach((r) => {
+      const c = snapshotCovers[r.id];
+      if (c && c.photo === photoName(r)) r.__cover = c.url;
+    });
     if (cfg.borrowingsTableId) {
       try { attachLoans(rows, await fetchTable(cfg.borrowingsTableId)); }
       catch (e) { console.warn("Borrowings not loaded", e); }
