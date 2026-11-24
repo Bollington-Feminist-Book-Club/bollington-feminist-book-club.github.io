@@ -173,26 +173,18 @@
 
   /* ---------- rendering ---------- */
 
-  // A wish list row as a book card: same cover, marked Recommended instead of Available/On loan
-  function normaliseWish(r) {
-    const isbn = cleanIsbn(r["ISBN"]);
-    return {
-      id: `w${r.id}`,
+  // A recommended Catalogue row as a book card: same cover, marked Recommended instead of Available/On loan
+  function normaliseRec(r) {
+    const b = normalise(r);
+    const link = (r["Link"] || "").trim();
+    return Object.assign(b, {
       rec: true,
-      order: r["Recommended Date"] ? Date.parse(r["Recommended Date"]) : r.id,
-      title: r["Book title"] || "Untitled",
-      synopsis: r["Why read it"] || "",
-      cover: isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false` : "",
-      isbn,
-      format: "", language: "", pages: null,
-      authors: String(r["Author"] || "").split(",").map((s) => s.trim()).filter(Boolean),
-      genres: [], owners: [],
       recommendedBy: values(r["Recommended by"]),
       where: single(r["Where to find it"]),
-      link: /^https?:\/\//i.test((r["Link"] || "").trim()) ? r["Link"].trim() : "",
-      rating: null, ratingCount: 0, holder: "", since: "", waiting: 0,
+      link: /^https?:\/\//i.test(link) ? link : "",
+      holder: "", since: "", waiting: 0,
       status: "rec"
-    };
+    });
   }
 
   const STATUS_LABEL = { available: "Available", out: "On loan", requested: "Requested", rec: "Recommended" };
@@ -518,7 +510,10 @@
     skeleton($("#grid-latest"));
     try {
       const { rows, sample } = await fetchBooks();
-      state.books = rows.map(normalise);
+      // One Catalogue table: Type "Recommended" rows are recommendations, everything else is on the shelves
+      const isRec = (r) => single(r["Type"]) === "Recommended";
+      state.books = rows.filter((r) => !isRec(r)).map(normalise);
+      state.recs = rows.filter(isRec).map(normaliseRec);
       if (sample) showNotice("Showing sample books until the Baserow token is added to config.js.");
     } catch (err) {
       console.error(err);
@@ -534,13 +529,12 @@
     if (m) openBook(m[1]);
   }
 
-  // Books page: "On our shelves", "Recommended" (the wish list) or "All", in one grid of covers
+  // Books page: "On our shelves", "Recommended" or "All", in one grid of covers
   function initBookViews() {
     if (!$(".views")) return;
     const views = ["shelves", "recommended", "all"];
     const params = new URLSearchParams(location.search);
     state.view = views.includes(params.get("view")) ? params.get("view") : "shelves";
-    let loading = null;
     const apply = () => {
       const sf = $("#shelf-filters");
       if (sf) sf.hidden = state.view === "recommended";
@@ -550,16 +544,7 @@
         const here = a.dataset.page === (state.view === "recommended" ? "wishlist" : "books");
         if (here) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
       });
-      if (state.view !== "shelves" && !loading && cfg.baserowToken && cfg.wishListTableId) {
-        loading = fetchTable(cfg.wishListTableId)
-          .then((rows) => { state.recs = rows.filter((r) => (r["Book title"] || "").trim()).map(normaliseWish); })
-          .catch((e) => console.warn("Wish list not loaded", e));
-      }
-      Promise.resolve(loading).then(() => booksReady).then(() => {
-        if ($("#grid")) renderGrid();
-        const m = location.hash.match(/^#book-(w\d+)$/);
-        if (m) openBook(m[1]);
-      });
+      Promise.resolve(booksReady).then(() => { if ($("#grid") && state.books.length + state.recs.length) renderGrid(); });
     };
     $$(".views button").forEach((b) => b.addEventListener("click", () => {
       state.view = b.dataset.view;
@@ -789,7 +774,10 @@
     return raw;
   }
 
-  async function openShelfForm(box, values) {
+  // mode "shelf": I own it; mode "rec": I'd recommend it. Type is set automatically and fields that
+  // don't apply to the mode are left off the form.
+  const MODE_HIDE = { shelf: ["Type", "Recommended by", "Where to find it", "Link"], rec: ["Type", "Owner", "Format", "Cover photo"] };
+  async function openShelfForm(box, values, mode = "shelf") {
     box.innerHTML = `<p class="count">Loading the form…</p>`;
     box.scrollIntoView({ behavior: "smooth", block: "start" });
     let slug, meta;
@@ -800,14 +788,21 @@
       box.innerHTML = `<p class="notice">The form couldn't be loaded just now. Please try again in a moment.</p>`;
       return;
     }
-    const fields = meta.fields.filter((f) => !SKIP_TYPES.includes(f.field.type)).sort((a, b) => a.order - b.order);
+    const all = meta.fields.filter((f) => !SKIP_TYPES.includes(f.field.type)).sort((a, b) => a.order - b.order);
+    const typeField = all.find((f) => f.field.name === "Type");
+    if (mode === "rec" && !typeField) {
+      box.innerHTML = `<p class="notice">Recommending from here isn't switched on yet – the "Type" question needs adding to the Add a book form in Baserow.</p>`;
+      return;
+    }
+    const fields = all.filter((f) => !MODE_HIDE[mode].includes(f.field.name));
+    const rec = mode === "rec";
     box.innerHTML = `<form class="sf" novalidate>
-      <h2>Add it to the shelves</h2>
-      <p class="sf__intro">Check the details, then choose the format, genres and your username.</p>
+      <h2>${rec ? "Recommend it" : "Add it to the shelves"}</h2>
+      <p class="sf__intro">${rec ? "Check the details, then add your username, why it's worth reading and where to find a copy." : "Check the details, then choose the format, genres and your username."}</p>
       ${fields.map((f) => fieldHtml(f, values[f.field.name])).join("")}
       <div class="sf__hp" aria-hidden="true"><label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
       <p class="sf__error" role="alert" hidden></p>
-      <div class="dialog__actions"><button class="button" type="submit">Add to the shelves</button></div>
+      <div class="dialog__actions"><button class="button" type="submit">${rec ? "Recommend it" : "Add to the shelves"}</button></div>
     </form>`;
 
     const formEl = $("form.sf", box);
@@ -845,6 +840,10 @@
         if (f.field.type === "file") uploads.push([f, val]);
         else payload[`field_${f.field.id}`] = val;
       }
+      if (typeField) {
+        const opt = (typeField.field.select_options || []).find((o) => o.value === (rec ? "Recommended" : "On our shelves"));
+        if (opt) payload[`field_${typeField.field.id}`] = opt.id;
+      }
       if (missing.length) {
         errEl.textContent = `Please fill in: ${missing.join(", ")}.`;
         errEl.hidden = false;
@@ -874,9 +873,9 @@
           throw new Error(body.detail ? JSON.stringify(body.detail) : `Baserow returned ${res.status}`);
         }
         box.innerHTML = `<div class="sf sf--done">
-          <h2>Thank you – it's on the shelves</h2>
-          <p>Your book is in the catalogue now. It may take a minute to appear.</p>
-          <div class="dialog__actions"><a class="button" href="books.html">See the books</a>
+          <h2>${rec ? "Thank you – it's on the recommended list" : "Thank you – it's on the shelves"}</h2>
+          <p>${rec ? "Your recommendation is in" : "Your book is in the catalogue"} now. It may take a minute to appear.</p>
+          <div class="dialog__actions"><a class="button" href="books.html${rec ? "?view=recommended" : ""}">See the books</a>
           <button class="button button--quiet" type="button" id="add-another">Add another</button></div>
         </div>`;
         $("#add-another").addEventListener("click", () => {
@@ -889,10 +888,10 @@
         console.error(err);
         errEl.textContent = /larger than 10 MB/.test(err.message)
           ? "That cover photo is too big – please choose one under 10 MB."
-          : "Something went wrong and the book wasn't added. Please try again, or tell the organisers.";
+          : `Something went wrong and the book wasn't ${rec ? "recommended" : "added"}. Please try again, or tell the organisers.`;
         errEl.hidden = false;
         btn.disabled = false;
-        btn.textContent = "Add to the shelves";
+        btn.textContent = rec ? "Recommend it" : "Add to the shelves";
       }
     });
   }
@@ -979,14 +978,14 @@
           ${dup ? `<p class="notice">"${esc(dup.title)}" is already on the shelves. You can still add your copy.</p>` : ""}
           <div class="dialog__actions">
             <button class="button" type="button" data-lookup="addBook">I own it – add it to the shelves</button>
-            <a class="button button--quiet" data-lookup="recommend">I want to read it – add to the wish list</a>
+            <button class="button button--quiet" type="button" data-lookup="recommend">I'd recommend it</button>
           </div>
           <p class="dialog__hint">Details from ${esc(book.sources.join(" and "))}. You can correct anything on the next step.</p>
         </div>
       </article>
       <div id="shelf-form"></div>`;
       $('[data-lookup="addBook"]', out).addEventListener("click", () => openShelfForm($("#shelf-form"), shelf));
-      wireFormLink($('[data-lookup="recommend"]', out), "recommend", { "Book title": plainText(book.title), "Author": plainText(book.authors.join(", ")) });
+      $('[data-lookup="recommend"]', out).addEventListener("click", () => openShelfForm($("#shelf-form"), shelf, "rec"));
     }
   }
 

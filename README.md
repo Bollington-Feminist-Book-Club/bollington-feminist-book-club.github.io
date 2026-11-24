@@ -26,7 +26,8 @@ Every page shares the same header and footer, repeated in each file.
 
 The site only ever **reads** from Baserow. Anything that adds or changes data – joining, borrowing, rating, adding or recommending a book – goes through a public Baserow form, so the site never needs permission to write.
 
-- **Wish list entries** can say where to find a copy, in **Where to find it** (Cheshire libraries, Library ebook or audiobook, Free ebook, Buy, Not sure yet), with an optional web address in **Link**, and an **ISBN** for the cover. Only links starting with http:// or https:// are shown. The site lists physical books and legal library or free ebooks only – not shared ebook files.
+- **One table for all books.** Catalogue holds both shelf books and recommendations. Its **Type** field says which: *On our shelves* or *Recommended* (an empty Type counts as on the shelves). Recommendations use **Recommended by**, **Where to find it** (Cheshire libraries, Library ebook or audiobook, Free ebook, Buy, Not sure yet) and **Link**, with the note on why to read it in **Synopsis**. When a recommended book turns up in someone's hands, change Type to *On our shelves* and set the Owner – no need to delete or re-add. Only links starting with http:// or https:// are shown. The site lists physical books and legal library or free ebooks only – not shared ebook files.
+- **The old Wish list table** is no longer read by the site. Its entries were copied into Catalogue on 24 November 2026; the table is kept for now as a backup.
 - **Catalogue, wish list, borrowings and ratings** are read with a read-only database token. Borrowings also show, on each book, who has it now and how many members are waiting for it; ratings feed the member pages.
 - **Members** are read from a publicly shared Baserow view that shows only safe fields. Emails and phone numbers never reach the site.
 - **Forms** are opened in a new tab. Borrow and Rate pre-fill the book; Adding a book happens on our own page and is submitted directly to the Baserow form.
@@ -93,7 +94,7 @@ The *Public members view* must show only **Username**, **Profile photo**, **Join
 | `borrow` | Borrowings | Borrow a book |
 | `rate` | Ratings | Give us your rating |
 | `addBook` | Catalogue | Add a book |
-| `recommend` | Wish list | Recommend a book |
+| `recommend` | Wish list | Old Recommend a book form – no longer linked from the site; recommendations go through `addBook` with Type *Recommended* |
 
 To get a link: open the form view in Baserow → Share view → copy. A button with no link shows greyed out.
 
