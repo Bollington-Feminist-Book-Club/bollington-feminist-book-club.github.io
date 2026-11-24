@@ -104,6 +104,10 @@
   "basis": "link:https://covers.openlibrary.org/b/isbn/9781529075076-L.jpg?default=false|isbn:9781529075076",
   "src": "https://books.google.com/books/content?id=8WodzgEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api&fife=w480-h720"
  },
+ "129": {
+  "basis": "link:https://books.google.com/books/content?id=KtWT0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api&fife=w480-h720|isbn:9781035065967",
+  "src": "https://books.google.com/books/content?id=KtWT0QEACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api&fife=w480-h720"
+ },
  "member:1": {
   "basis": "uSo6GPsMKdeJS6jPD2frpChxNelpfnp8_1f9cd9512bd72c787332d4a104fcf8b9513925e8b4c59ad38910a6bedb9f8769.png",
   "src": "https://baserow-backend-production20240528124524339000000001.s3.amazonaws.com/user_files/uSo6GPsMKdeJS6jPD2frpChxNelpfnp8_1f9cd9512bd72c787332d4a104fcf8b9513925e8b4c59ad38910a6bedb9f8769.png"
