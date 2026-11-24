@@ -92,7 +92,7 @@
       order: Number(r.order) || r.id,
       title: r["Book title"] || "Untitled",
       synopsis: r["Synopsis"] || "",
-      cover: cover ? cover.url
+      cover: r.__cover ? r.__cover : cover ? cover.url
         : (r["Cover URL"] || "").trim()
         || (cleanIsbn(r["ISBN"]) ? `https://covers.openlibrary.org/b/isbn/${cleanIsbn(r["ISBN"])}-L.jpg?default=false` : ""),
       isbn: cleanIsbn(r["ISBN"]),
@@ -105,6 +105,7 @@
       owners: values(r["Owner"]),
       rating: avg,
       ratingCount: scores.length,
+      demand: (r["Borrowings"] || []).length,
       holder: (r.__loan && r.__loan.holder) || "",
       since: (r.__loan && r.__loan.since) || "",
       waiting: (r.__loan && r.__loan.waiting) || 0,
@@ -137,36 +138,44 @@
     return (data.results || []).map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [names[k] || k, v])));
   }
 
+  // Who has each book now and how many are queued for it, from the Borrowings table
+  function attachLoans(rows, borrowings) {
+    const loans = {};
+    for (const l of borrowings) {
+      const st = single(l["Status"]);
+      for (const bk of l["Books"] || []) {
+        const e = (loans[bk.id] = loans[bk.id] || { holder: "", since: "", waiting: 0 });
+        if (st === "Borrowed" && (!e.since || (l["Borrowed on"] || "") >= e.since)) {
+          e.holder = values(l["Member"])[0] || ""; e.since = l["Borrowed on"] || "";
+        } else if (st === "Requested") e.waiting++;
+      }
+    }
+    rows.forEach((r) => { r.__loan = loans[r.id]; });
+    return rows;
+  }
+
+  // The copy GitHub keeps (refreshed every 30 minutes): instant, with covers stored on the site itself
+  let snapshotCovers = {};
+  async function fetchSnapshot() {
+    const res = await fetch(`data/snapshot.json?v=${window.__v || ""}`);
+    if (!res.ok) throw new Error(`No snapshot (${res.status})`);
+    const data = await res.json();
+    snapshotCovers = Object.fromEntries(data.catalogue.filter((r) => r.__cover).map((r) => [r.id, r.__cover]));
+    return { rows: attachLoans(data.catalogue, data.borrowings || []), sample: false };
+  }
+
+  // Live from Baserow: anything added since the last copy. Covers already copied to the site are kept.
   async function fetchBooks() {
     if (!cfg.baserowToken) {
       const res = await fetch("data/sample.json");
       const data = await res.json();
       return { rows: data.results, sample: true };
     }
-    let url = `${cfg.baserowApi.replace(/\/$/, "")}/api/database/rows/table/${cfg.catalogueTableId}/?user_field_names=true&size=200`;
-    const rows = [];
-    while (url) {
-      const res = await fetch(url, { headers: { Authorization: `Token ${cfg.baserowToken}` } });
-      if (!res.ok) throw new Error(`Baserow returned ${res.status}`);
-      const data = await res.json();
-      rows.push(...data.results);
-      url = data.next ? data.next.replace(/^http:/, "https:") : null;
-    }
-    // Who has each book now and how many are queued for it, from the Borrowings table
+    const rows = await fetchTable(cfg.catalogueTableId);
+    rows.forEach((r) => { if (snapshotCovers[r.id]) r.__cover = snapshotCovers[r.id]; });
     if (cfg.borrowingsTableId) {
-      try {
-        const loans = {};
-        for (const l of await fetchTable(cfg.borrowingsTableId)) {
-          const st = single(l["Status"]);
-          for (const bk of l["Books"] || []) {
-            const e = (loans[bk.id] = loans[bk.id] || { holder: "", since: "", waiting: 0 });
-            if (st === "Borrowed" && (!e.since || (l["Borrowed on"] || "") >= e.since)) {
-              e.holder = values(l["Member"])[0] || ""; e.since = l["Borrowed on"] || "";
-            } else if (st === "Requested") e.waiting++;
-          }
-        }
-        rows.forEach((r) => { r.__loan = loans[r.id]; });
-      } catch (e) { console.warn("Borrowings not loaded", e); }
+      try { attachLoans(rows, await fetchTable(cfg.borrowingsTableId)); }
+      catch (e) { console.warn("Borrowings not loaded", e); }
     }
     return { rows, sample: false };
   }
@@ -265,8 +274,9 @@
   function renderFilters() {
     const fill = (sel, items) => {
       const el = $(sel);
-      const first = el.options[0].outerHTML;
+      const first = el.options[0].outerHTML, keep = el.value;
       el.innerHTML = first + items.map((v) => `<option>${esc(v)}</option>`).join("");
+      el.value = items.includes(keep) ? keep : "";
     };
     const uniq = (arr) => [...new Set(arr)].filter(Boolean).sort((a, b) => a.localeCompare(b, "en-GB"));
     fill("#genre", uniq(state.books.flatMap((b) => b.genres)));
@@ -274,8 +284,10 @@
   }
 
   function renderHero() {
-    const newest = [...state.books].filter((b) => b.cover).sort((a, b) => b.order - a.order).slice(0, 3);
-    // Newest sits in the middle, on top
+    // The most borrowed or asked-for books; ties go to the one with a queue, then the newest
+    const newest = [...state.books].filter((b) => b.cover)
+      .sort((a, b) => b.demand - a.demand || b.waiting - a.waiting || b.order - a.order).slice(0, 3);
+    // Most wanted sits in the middle, on top
     const order = newest.length === 3 ? [newest[1], newest[0], newest[2]] : newest;
     $("#hero-stack").innerHTML = order.map((b) =>
       `<button type="button" data-open="${b.id}" aria-label="${esc(b.title)}">${coverHtml(b, true, "L")}</button>`).join("");
@@ -504,26 +516,37 @@
     n.textContent = text;
   }
 
-  async function loadBooks() {
-    if (!$("#grid") && !$("#grid-latest") && !$("#hero-stack") && !$("#m-shelf")) return;
-    skeleton($("#grid"));
-    skeleton($("#grid-latest"));
-    try {
-      const { rows, sample } = await fetchBooks();
-      // One Catalogue table: Type "Recommended" rows are recommendations, everything else is on the shelves
-      const isRec = (r) => single(r["Type"]) === "Recommended";
-      state.books = rows.filter((r) => !isRec(r)).map(normalise);
-      state.recs = rows.filter(isRec).map(normaliseRec);
-      if (sample) showNotice("Showing sample books until the Baserow token is added to config.js.");
-    } catch (err) {
-      console.error(err);
-      ["#grid", "#grid-latest"].forEach((s) => { if ($(s)) $(s).innerHTML = ""; });
-      showNotice("We couldn't load the catalogue just now. Please try again in a moment.");
-      return;
-    }
+  function useRows(rows) {
+    // One Catalogue table: Type "Recommended" rows are recommendations, everything else is on the shelves
+    const isRec = (r) => single(r["Type"]) === "Recommended";
+    state.books = rows.filter((r) => !isRec(r)).map(normalise);
+    state.recs = rows.filter(isRec).map(normaliseRec);
     if ($("#grid")) { renderFilters(); renderGrid(); }
     renderLatest();
     if ($("#hero-stack")) renderHero();
+  }
+
+  async function loadBooks() {
+    if (!$("#grid") && !$("#grid-latest") && !$("#hero-stack") && !$("#m-shelf")) return;
+    let shown = false;
+    try {
+      useRows((await fetchSnapshot()).rows);
+      shown = true;
+    } catch (err) {
+      skeleton($("#grid"));
+      skeleton($("#grid-latest"));
+    }
+    // Then check Baserow for anything newer. If the copy is already showing, this happens quietly.
+    const live = fetchBooks().then(({ rows, sample }) => {
+      useRows(rows);
+      if (sample) showNotice("Showing sample books until the Baserow token is added to config.js.");
+    }).catch((err) => {
+      console.error(err);
+      if (shown) return;
+      ["#grid", "#grid-latest"].forEach((s) => { if ($(s)) $(s).innerHTML = ""; });
+      showNotice("We couldn't load the catalogue just now. Please try again in a moment.");
+    });
+    if (!shown) await live;
 
     const m = location.hash.match(/^#book-(\d+)$/);
     if (m) openBook(m[1]);

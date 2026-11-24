@@ -1,45 +1,85 @@
-# Sample workflow for building and deploying a Jekyll site to GitHub Pages
+# Copies the books and covers from Baserow into the site, then builds and publishes it on GitHub Pages.
 name: Deploy Jekyll with GitHub Pages dependencies preinstalled
 
 on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
-  # Allows you to run this workflow manually from the Actions tab
+  # Refreshes the copy of the books and covers every 30 minutes
+  schedule:
+    - cron: "*/30 * * * *"
+  # Allows you to run this workflow manually from the Actions tab ("Run workflow")
   workflow_dispatch:
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
-  contents: read
+  contents: write   # to save the copied books and covers back to the repo
   pages: write
   id-token: write
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Build job
   build:
     runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.save.outputs.publish }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Copy books and covers from Baserow
+        run: |
+          npm install --no-save --no-audit --no-fund sharp@0.33.5
+          node scripts/snapshot.mjs
+
+      - name: Save the copy to the repo
+        id: save
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/snapshot.json data/cover-sources.json assets/covers
+          if git diff --cached --quiet; then
+            echo "No changes in the books or covers"
+            # A scheduled run with nothing new doesn't need to republish
+            if [ "${{ github.event_name }}" = "schedule" ]; then echo "publish=false" >> "$GITHUB_OUTPUT"; else echo "publish=true" >> "$GITHUB_OUTPUT"; fi
+          else
+            git commit -m "Update the copy of the books and covers"
+            git pull --rebase --autostash origin main
+            git push
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stamp this version on the pages
+        if: steps.save.outputs.publish == 'true'
+        run: |
+          # Browsers keep scripts and styles until the next publish, then fetch the new ones
+          v=$(git rev-parse --short HEAD)
+          find . -name "*.html" -not -path "./node_modules/*" -exec sed -i "s#Math.floor(Date.now() / 60000)#'$v'#" {} +
+          rm -rf node_modules
+
       - name: Setup Pages
+        if: steps.save.outputs.publish == 'true'
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
+        if: steps.save.outputs.publish == 'true'
         uses: actions/jekyll-build-pages@v1
         with:
           source: ./
           destination: ./_site
       - name: Upload artifact
+        if: steps.save.outputs.publish == 'true'
         uses: actions/upload-pages-artifact@v3
 
-  # Deployment job
   deploy:
+    if: needs.build.outputs.publish == 'true'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

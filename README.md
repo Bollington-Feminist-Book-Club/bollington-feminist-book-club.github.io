@@ -134,3 +134,17 @@ Each page loads `styles.css`, `config.js` and `app.js` with a fresh version numb
 - `sitemap.xml` – list of public pages for search engines
 - `assets/lines.png` – the line-art faces, cut out so the site can colour them (used in the join band)
 - `.github/workflows/jekyll-gh-pages.yml` – deployment
+
+## The copy on GitHub (speed)
+
+Every 30 minutes, and on every push, the deploy workflow (`.github/workflows/jekyll-gh-pages.yml`) runs `scripts/snapshot.mjs`, which:
+
+- copies the Catalogue and Borrowings tables from Baserow into `data/snapshot.json`;
+- saves every book's cover into `assets/covers/` (480 px JPEGs). The cover comes from, in order: a photo uploaded to **Cover photo** in Baserow, the **Cover URL** field, Google Books for the ISBN, then Open Library. Each cover is fetched once and only looked up again when that book's photo, link or ISBN changes; `data/cover-sources.json` records where each came from;
+- saves those files back to the repo and republishes the site – a scheduled run with nothing new doesn't republish.
+
+Pages show this copy straight away, then quietly check Baserow and update if anything has changed since. So a new book or loan appears within a second or two of opening a page; a new book's cover appears after the next copy (up to 30 minutes).
+
+To refresh the copy now: GitHub → **Actions** → **Deploy Jekyll…** → **Run workflow**.
+
+Scripts and styles are stamped with the version being published, so browsers keep them until the next publish rather than re-downloading them.
