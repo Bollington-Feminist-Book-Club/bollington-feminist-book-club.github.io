@@ -64,12 +64,12 @@
       <div class="page__head">
         <h1 class="page__title">Add a book</h1>
       </div>
-      <p class="page__intro">Type the ISBN – the 10 or 13-digit number on the back cover, near the barcode – and we'll fill in the title, author, synopsis and cover for you.</p>
+      <p class="page__intro">Type the title, or the ISBN – the 10 or 13-digit number on the back cover, near the barcode – and we'll fill in the author, synopsis and cover for you. Searching by title shows the different editions, so you can pick the one you have.</p>
 
       <form class="isbn" id="isbn-form" autocomplete="off">
-        <label for="isbn" class="visually-hidden">ISBN</label>
-        <input id="isbn" name="isbn" inputmode="numeric" placeholder="e.g. 978 0 00 811527 2" required>
-        <button class="button" type="submit">Look it up</button>
+        <label for="isbn" class="visually-hidden">Title or ISBN</label>
+        <input id="isbn" name="isbn" placeholder="Title or ISBN, e.g. In Memoriam or 978 0 24 156783 8" required>
+        <button class="button" type="submit">Find it</button>
       </form>
 
       <div id="isbn-result" aria-live="polite"></div>

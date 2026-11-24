@@ -484,3 +484,14 @@ select::-ms-expand { display: none; }
 .page__links { display: inline-flex; flex-wrap: wrap; gap: 8px 22px; justify-content: flex-end; }
 .status--rec { color: var(--muted); }
 .status--rec::before { content: "☆"; width: auto; height: auto; background: none; border-radius: 0; font-size: 14px; line-height: 1; }
+
+/* Add a book: editions found by title */
+.editions { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.edition { display: flex; gap: 14px; width: 100%; text-align: left; padding: 12px; background: var(--card); color: var(--text); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; font: inherit; }
+.edition:hover, .edition:focus-visible { border-color: var(--brand); outline: none; }
+.edition__cover { flex: none; width: 56px; height: 84px; border-radius: 3px; background: var(--bg-alt); overflow: hidden; }
+.edition__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.edition__text { display: flex; flex-direction: column; gap: 2px; font-size: 15px; line-height: 1.4; }
+.edition__text strong { font-family: var(--serif); font-size: 17px; }
+.edition__facts, .edition__isbn { color: var(--muted); font-size: 14px; }
+@media (max-width: 560px) { .editions { grid-template-columns: 1fr; } }

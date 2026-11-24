@@ -14,7 +14,7 @@ The site is plain HTML, CSS and JavaScript, hosted free on GitHub Pages. All the
 |---|---|---|
 | Home | `index.html` | Intro, the three newest covers, the four newest books and a join button |
 | Books | `books.html` | One grid of book covers with a switch at the top: **On our shelves** (the default), **Recommended** or **All**. Shelf books are marked Available, On loan or Requested and open a panel with Borrow and Rate buttons; recommended books are marked Recommended and open a panel with why to read it, who recommended it and where to find a copy. Search covers titles, authors and ISBNs. Genre, language and "available now" only apply to shelf books. Link straight to a view with `books.html?view=recommended` or `?view=all` – the menu's Recommended item does this |
-| Add a book | `add.html` | A member types an ISBN; the site looks the book up and opens the Baserow form already filled in |
+| Add a book | `add.html` | Type a title or an ISBN. A title search lists the editions Google Books knows (Open Library if Google finds none), with cover, publisher, year, pages and ISBN, so members pick the copy they actually have; an ISBN goes straight to that edition. Either way the details, synopsis and cover are filled in for them |
 | (old) Wish list | `wishlist.html` | Redirects to `books.html?view=recommended`, so old links keep working |
 | Members | `members.html` | Usernames, profile pictures, join dates and books shared. Each links to that member's page |
 | Member | `member.html?u=Name` | One member's shelf, what they're borrowing now, past loans and their ratings |

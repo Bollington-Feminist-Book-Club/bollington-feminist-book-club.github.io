@@ -905,16 +905,51 @@
 
     formEl.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const isbn = cleanIsbn($("#isbn").value);
-      if (isbn.length !== 10 && isbn.length !== 13) {
-        out.innerHTML = `<p class="notice">That doesn't look like an ISBN. It's the 10 or 13-digit number on the back cover, near the barcode.</p>`;
+      const raw = $("#isbn").value.trim();
+      const isbn = cleanIsbn(raw);
+      // Mostly digits: treat as an ISBN; otherwise search by title and let the person pick their edition
+      if (/^[\dxX\s-]+$/.test(raw)) {
+        if (isbn.length !== 10 && isbn.length !== 13) {
+          out.innerHTML = `<p class="notice">That doesn't look like an ISBN. It's the 10 or 13-digit number on the back cover, near the barcode – or type the title instead.</p>`;
+          return;
+        }
+        return showIsbn(isbn);
+      }
+      if (raw.length < 3) { out.innerHTML = `<p class="notice">Type at least a few letters of the title.</p>`; return; }
+      out.innerHTML = `<p class="count">Searching for "${esc(raw)}"…</p>`;
+      const eds = await searchEditions(raw);
+      if (!eds.length) {
+        out.innerHTML = `<p class="notice">Nothing found for that title. Try fewer words, or type the ISBN from the back cover.</p>`;
         return;
       }
+      out.innerHTML = `<p class="count">Pick your edition – check the cover and publisher against your copy. ${eds.length} found.</p>
+        <ul class="editions">${eds.map((ed, i) => `<li><button type="button" class="edition" data-i="${i}">
+          <span class="edition__cover">${ed.thumb ? `<img src="${esc(ed.thumb)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>
+          <span class="edition__text"><strong>${esc(ed.title)}</strong>
+            <span>${esc(ed.authors.join(", "))}</span>
+            <span class="edition__facts">${esc([ed.publisher, ed.year, ed.pages ? `${ed.pages} pages` : ""].filter(Boolean).join(" · "))}</span>
+            <span class="edition__isbn">ISBN ${esc(ed.isbn)}</span></span>
+        </button></li>`).join("")}</ul>
+        <p class="page__aside">Can't see yours? Type the ISBN from the back cover instead – it always finds the exact edition.</p>`;
+      $$(".edition", out).forEach((b) => b.addEventListener("click", () => {
+        const ed = eds[Number(b.dataset.i)];
+        $("#isbn").value = ed.isbn;
+        showIsbn(ed.isbn, ed);
+      }));
+    });
+
+    async function showIsbn(isbn, picked) {
       out.innerHTML = `<p class="count">Looking it up…</p>`;
       if (!state.books.length) {
         try { state.books = (await fetchBooks()).rows.map(normalise); } catch (err) { /* duplicate check is optional */ }
       }
       const book = await lookupIsbn(isbn);
+      // A picked edition fills any gaps the ISBN lookup left
+      if (book && picked) {
+        if (!book.cover && picked.thumb) book.cover = picked.thumb;
+        if (!book.pages && picked.pages) book.pages = picked.pages;
+        if (!book.authors.length) book.authors = picked.authors;
+      }
       if (!book) {
         out.innerHTML = `<p class="notice">We couldn't find that ISBN in Open Library or Google Books. You can still <a data-form="addBook" href="#">add the book by hand</a>.</p>`;
         $$("[data-form]", out).forEach((a) => wireFormLink(a, a.dataset.form));
@@ -952,7 +987,32 @@
       <div id="shelf-form"></div>`;
       $('[data-lookup="addBook"]', out).addEventListener("click", () => openShelfForm($("#shelf-form"), shelf));
       wireFormLink($('[data-lookup="recommend"]', out), "recommend", { "Book title": plainText(book.title), "Author": plainText(book.authors.join(", ")) });
-    });
+    }
+  }
+
+  // Title search: Google Books lists editions with their ISBNs; Open Library is the fallback
+  async function searchEditions(q) {
+    const key = cfg.googleBooksKey ? `&key=${encodeURIComponent(cfg.googleBooksKey)}` : "";
+    const g = await getJson(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(`intitle:${q}`)}&printType=books&maxResults=30${key}`);
+    const seen = new Set();
+    let eds = ((g && g.items) || []).map((it) => {
+      const v = it.volumeInfo || {};
+      const ids = v.industryIdentifiers || [];
+      const isbn = cleanIsbn(((ids.find((x) => x.type === "ISBN_13") || ids.find((x) => x.type === "ISBN_10")) || {}).identifier || "");
+      const img = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
+      return { isbn, title: v.title || "", authors: v.authors || [], publisher: v.publisher || "",
+        year: (v.publishedDate || "").slice(0, 4), pages: v.pageCount || null,
+        thumb: img ? img.replace(/^http:/, "https:").replace("&edge=curl", "") : "" };
+    }).filter((e) => e.isbn && !seen.has(e.isbn) && seen.add(e.isbn));
+    if (!eds.length) {
+      const o = await getJson(`https://openlibrary.org/search.json?title=${encodeURIComponent(q)}&fields=title,author_name,isbn,publisher,first_publish_year,cover_i&limit=10`);
+      eds = ((o && o.docs) || []).flatMap((d) => (d.isbn || []).filter((i) => i.length === 13).slice(0, 3).map((isbn) => ({
+        isbn, title: d.title || "", authors: d.author_name || [], publisher: (d.publisher || [])[0] || "",
+        year: d.first_publish_year ? String(d.first_publish_year) : "", pages: null,
+        thumb: `https://covers.openlibrary.org/b/isbn/${isbn}-S.jpg?default=false`
+      })));
+    }
+    return eds.slice(0, 20);
   }
 
 
