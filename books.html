@@ -43,7 +43,7 @@
       <a class="logo" href="./"><span class="logo__mark" aria-hidden="true"></span><span data-club-name>Bollington Feminist Book Club</span></a>
       <nav class="nav" aria-label="Main">
         <a href="books.html" data-page="books">Books</a>
-        <a href="wishlist.html" data-page="wishlist">Wish list</a>
+        <a href="books.html?view=recommended" data-page="wishlist">Recommended</a>
         <a href="members.html" data-page="members">Members</a>
         <a href="about.html" data-page="about">About</a>
         <a class="button button--small" data-form="join" href="#">Join</a>
@@ -62,9 +62,9 @@
     <section class="section container page">
       <div class="page__head">
         <h1 class="page__title">Books</h1>
-        <a class="section__link" href="add.html">Add a book</a>
+        <span class="page__links"><a class="section__link" href="add.html">Add a book</a> <a class="section__link" data-form="recommend" href="#">Recommend a book</a></span>
       </div>
-      <p class="page__intro">Books on our shelves belong to members: pick one, borrow it and pass it back when you're done. Recommended books aren't in the pot yet – each card says where to find a copy.</p>
+      <p class="page__intro">Books on our shelves belong to members: pick one, borrow it and pass it back when you're done. Recommended books aren't in the pot yet – open one to see who suggested it and where to find a copy.</p>
 
       <div class="views" role="group" aria-label="Which books to show">
         <button type="button" data-view="shelves" aria-pressed="true">On our shelves</button>
@@ -74,8 +74,8 @@
 
       <div class="filters" role="search">
         <label class="filters__search">
-          <span class="visually-hidden">Search titles and authors</span>
-          <input type="search" id="q" placeholder="Search titles and authors" autocomplete="off">
+          <span class="visually-hidden">Search titles, authors or ISBN</span>
+          <input type="search" id="q" placeholder="Search titles, authors or ISBN" autocomplete="off">
         </label>
         <div class="filters__shelf" id="shelf-filters">
         <label><span class="visually-hidden">Genre</span>
@@ -99,12 +99,6 @@
       <p class="count" id="count" aria-live="polite"></p>
       <div class="grid" id="grid"></div>
       <p class="notice" id="notice" hidden></p>
-
-      <div class="recs" id="recs" hidden>
-        <h2 class="recs__title">Recommended – not on our shelves yet</h2>
-        <ul class="wishlist" id="rec-items"></ul>
-        <p class="recs__more"><a href="wishlist.html">Recommend a book</a></p>
-      </div>
     </section>
   </main>
 

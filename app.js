@@ -6,7 +6,7 @@
   const $ = (sel, root = document) => root.querySelector(sel);
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
-  const state = { books: [], q: "", genre: "", lang: "", sort: "recent", avail: false };
+  const state = { books: [], recs: [], view: "shelves", q: "", genre: "", lang: "", sort: "recent", avail: false };
 
   /* ---------- helpers ---------- */
 
@@ -173,7 +173,29 @@
 
   /* ---------- rendering ---------- */
 
-  const STATUS_LABEL = { available: "Available", out: "On loan", requested: "Requested" };
+  // A wish list row as a book card: same cover, marked Recommended instead of Available/On loan
+  function normaliseWish(r) {
+    const isbn = cleanIsbn(r["ISBN"]);
+    return {
+      id: `w${r.id}`,
+      rec: true,
+      order: r["Recommended Date"] ? Date.parse(r["Recommended Date"]) : r.id,
+      title: r["Book title"] || "Untitled",
+      synopsis: r["Why read it"] || "",
+      cover: isbn ? `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false` : "",
+      isbn,
+      format: "", language: "", pages: null,
+      authors: String(r["Author"] || "").split(",").map((s) => s.trim()).filter(Boolean),
+      genres: [], owners: [],
+      recommendedBy: values(r["Recommended by"]),
+      where: single(r["Where to find it"]),
+      link: /^https?:\/\//i.test((r["Link"] || "").trim()) ? r["Link"].trim() : "",
+      rating: null, ratingCount: 0, holder: "", since: "", waiting: 0,
+      status: "rec"
+    };
+  }
+
+  const STATUS_LABEL = { available: "Available", out: "On loan", requested: "Requested", rec: "Recommended" };
   const status = (b) => `<span class="status status--${b.status}">${STATUS_LABEL[b.status]}</span>`;
   const initial = (name) => esc(name.trim().charAt(0).toUpperCase() || "?");
 
@@ -209,17 +231,22 @@
       ${coverHtml(b)}
       <div class="book__title">${esc(b.title)}</div>
       <div class="book__author">${esc(b.authors.join(", "))}</div>
-      <div class="book__line">${status(b)}${b.waiting ? `<span class="book__wait">${b.waiting} waiting</span>` : ""}${stars(b.rating, b.ratingCount)}</div>
+      <div class="book__line">${b.rec ? `<span class="status status--rec">Recommended</span>` : status(b)}${b.waiting ? `<span class="book__wait">${b.waiting} waiting</span>` : ""}${stars(b.rating, b.ratingCount)}</div>
     </button>`;
   }
 
   function filtered() {
     const q = state.q.toLowerCase().trim();
-    const list = state.books.filter((b) =>
-      (!q || b.title.toLowerCase().includes(q) || b.authors.some((a) => a.toLowerCase().includes(q))) &&
+    const qIsbn = q.replace(/[^0-9x]/g, "");
+    const match = (b) => !q || b.title.toLowerCase().includes(q) || b.authors.some((a) => a.toLowerCase().includes(q))
+      || (qIsbn.length >= 4 && /^[0-9x\s-]+$/.test(q) && (b.isbn || "").toLowerCase().includes(qIsbn));
+    // Genre, language and "available now" only apply to shelf books, so they're hidden for recommendations
+    const shelf = state.view === "recommended" ? [] : state.books.filter((b) => match(b) &&
       (!state.genre || b.genres.includes(state.genre)) &&
       (!state.lang || b.language === state.lang) &&
       (!state.avail || b.status === "available"));
+    const recs = state.view === "shelves" ? [] : state.recs.filter(match).sort((a, b) => b.order - a.order);
+    if (state.view === "recommended") return recs;
 
     const by = {
       recent: (a, b) => b.order - a.order,
@@ -227,15 +254,17 @@
       title: (a, b) => a.title.localeCompare(b.title, "en-GB"),
       short: (a, b) => (a.pages ?? 1e9) - (b.pages ?? 1e9)
     }[state.sort];
-    return list.sort(by);
+    // "All": shelf books first, then recommendations
+    return shelf.sort(by).concat(recs);
   }
 
   function renderGrid() {
     const list = filtered();
-    const total = state.books.length;
-    $("#count").textContent = list.length === total
-      ? `${total} ${total === 1 ? "book" : "books"} to borrow from`
-      : `${list.length} of ${total} books`;
+    const shelfN = list.filter((b) => !b.rec).length, recN = list.length - shelfN;
+    const plural = (n, w) => `${n} ${n === 1 ? w : w + "s"}`;
+    $("#count").textContent = state.view === "recommended" ? `${plural(recN, "recommended book")}`
+      : state.view === "all" ? `${plural(shelfN, "book")} to borrow · ${recN} recommended`
+      : shelfN === state.books.length ? `${plural(shelfN, "book")} to borrow from` : `${shelfN} of ${state.books.length} books`;
     $("#grid").innerHTML = list.length
       ? list.map(cardHtml).join("")
       : `<p class="notice">Nothing matches that. Try clearing a filter.</p>`;
@@ -325,7 +354,27 @@
     return parts.length ? `<p class="loan-line">${parts.join(" · ")}</p>` : "";
   }
 
+  function openRec(b) {
+    $("#d-body").innerHTML = `
+      <div>${coverHtml(b, true, "L")}</div>
+      <div>
+        <div class="tags"><span class="tag">Recommended – not on our shelves</span></div>
+        <h2 id="d-title">${esc(b.title)}</h2>
+        <p class="featured__author">${esc(b.authors.join(", "))}</p>
+        <div class="dialog__synopsis">${b.synopsis ? `<p>${esc(b.synopsis).replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>")}</p>` : "<p>No note yet.</p>"}</div>
+        ${b.recommendedBy[0] ? `<div class="meta"><span class="avatar">${initial(b.recommendedBy[0])}</span>
+          <span><strong>Recommended by ${esc(b.recommendedBy.join(", "))}</strong></span></div>` : ""}
+        <p class="loan-line">${b.where || b.link ? `Where to find it: ${b.link ? `<a href="${esc(b.link)}" target="_blank" rel="noopener">${esc(b.where || "follow this link")}</a>` : esc(b.where)}` : "Nobody's said where to find a copy yet – try your library."}</p>
+        <p class="dialog__hint">Own a copy? <a href="add.html">Add it to the shelves</a> so others can borrow it.</p>
+      </div>`;
+    const dlg = $("#book-dialog");
+    if (!dlg.open) dlg.showModal();
+    history.replaceState(null, "", `${location.pathname}${location.search}#book-${b.id}`);
+  }
+
   function openBook(id) {
+    const r = state.recs.find((x) => String(x.id) === String(id));
+    if (r) return openRec(r);
     const b = state.books.find((x) => String(x.id) === String(id));
     if (!b) return;
     const facts = [b.language, b.format, b.pages ? `${b.pages} pages` : ""].filter(Boolean).join(" · ");
@@ -485,41 +534,41 @@
     if (m) openBook(m[1]);
   }
 
-  // Books page: "On our shelves", "Recommended" (the wish list) or both, with the same search box
+  // Books page: "On our shelves", "Recommended" (the wish list) or "All", in one grid of covers
   function initBookViews() {
-    const recs = $("#recs");
-    if (!recs) return;
-    let wish = null;
-    const views = { shelves: [true, false], recommended: [false, true], all: [true, true] };
+    if (!$(".views")) return;
+    const views = ["shelves", "recommended", "all"];
     const params = new URLSearchParams(location.search);
-    let view = views[params.get("view")] ? params.get("view") : "shelves";
-    const shelfBits = ["#shelf-filters", "#count", "#grid"];
-    const drawRecs = () => {
-      if (!wish) return;
-      const q = ($("#q") && $("#q").value || "").trim().toLowerCase();
-      const rows = wish.filter((r) => !q || `${r["Book title"] || ""} ${r["Author"] || ""}`.toLowerCase().includes(q));
-      renderWishlist(rows, $("#rec-items"));
-    };
+    state.view = views.includes(params.get("view")) ? params.get("view") : "shelves";
+    let loading = null;
     const apply = () => {
-      const [shelves, rec] = views[view];
-      shelfBits.forEach((sel) => { const el = $(sel); if (el) el.hidden = !shelves; });
-      recs.hidden = !rec;
-      $$(".views button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === view ? "true" : "false"));
-      if (rec && !wish) {
-        if (!cfg.baserowToken || !cfg.wishListTableId) { wish = []; drawRecs(); return; }
-        $("#rec-items").innerHTML = `<li class="empty">Loading recommendations…</li>`;
-        fetchTable(cfg.wishListTableId).then((rows) => { wish = rows; drawRecs(); })
-          .catch(() => { $("#rec-items").innerHTML = `<li class="empty">We couldn't load the recommendations just now.</li>`; });
-      } else drawRecs();
+      const sf = $("#shelf-filters");
+      if (sf) sf.hidden = state.view === "recommended";
+      $$(".views button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === state.view ? "true" : "false"));
+      // The menu's "Recommended" item lights up for that view
+      $$('.nav a[data-page]').forEach((a) => {
+        const here = a.dataset.page === (state.view === "recommended" ? "wishlist" : "books");
+        if (here) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+      });
+      if (state.view !== "shelves" && !loading && cfg.baserowToken && cfg.wishListTableId) {
+        loading = fetchTable(cfg.wishListTableId)
+          .then((rows) => { state.recs = rows.filter((r) => (r["Book title"] || "").trim()).map(normaliseWish); })
+          .catch((e) => console.warn("Wish list not loaded", e));
+      }
+      Promise.resolve(loading).then(() => booksReady).then(() => {
+        if ($("#grid")) renderGrid();
+        const m = location.hash.match(/^#book-(w\d+)$/);
+        if (m) openBook(m[1]);
+      });
     };
     $$(".views button").forEach((b) => b.addEventListener("click", () => {
-      view = b.dataset.view;
+      state.view = b.dataset.view;
       const u = new URL(location.href);
-      if (view === "shelves") u.searchParams.delete("view"); else u.searchParams.set("view", view);
+      if (state.view === "shelves") u.searchParams.delete("view"); else u.searchParams.set("view", state.view);
+      u.hash = "";
       history.replaceState(null, "", u);
       apply();
     }));
-    on("#q", "input", drawRecs);
     apply();
   }
 

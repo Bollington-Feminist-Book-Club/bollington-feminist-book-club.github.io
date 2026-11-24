@@ -481,3 +481,6 @@ select::-ms-expand { display: none; }
 .card__where::before { content: "Find it: "; font-weight: 400; color: rgba(42, 43, 85, .8); }
 .card__where a { color: #b4513b; text-decoration: underline; text-underline-offset: 2px; }
 :root[data-reading="easy"] .views button { font-size: 17px; letter-spacing: .12em; word-spacing: .16em; }
+.page__links { display: inline-flex; flex-wrap: wrap; gap: 8px 22px; justify-content: flex-end; }
+.status--rec { color: var(--muted); }
+.status--rec::before { content: "☆"; width: auto; height: auto; background: none; border-radius: 0; font-size: 14px; line-height: 1; }
