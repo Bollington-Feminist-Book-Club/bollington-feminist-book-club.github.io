@@ -13,9 +13,9 @@ The site is plain HTML, CSS and JavaScript, hosted free on GitHub Pages. All the
 | Page | File | What it does |
 |---|---|---|
 | Home | `index.html` | Intro, the three newest covers, the four newest books and a join button |
-| Books | `books.html` | The full catalogue with search, filters (genre, language, available now) and sorting. Each book opens a panel with its details and Borrow and Rate buttons |
+| Books | `books.html` | A switch at the top shows **On our shelves** (the default), **Recommended** or **All**. Shelf books have search, filters (genre, language, available now) and sorting, and each opens a panel with its details and Borrow and Rate buttons. Recommended books are wish list entries, shown as library cards with where to find a copy; the search box covers both. Link straight to a view with `books.html?view=recommended` or `?view=all` |
 | Add a book | `add.html` | A member types an ISBN; the site looks the book up and opens the Baserow form already filled in |
-| Wish list | `wishlist.html` | Books members want to read that nobody owns yet |
+| Wish list | `wishlist.html` | Books members recommend that aren't on the shelves yet, each with where to find a copy |
 | Members | `members.html` | Usernames, profile pictures, join dates and books shared. Each links to that member's page |
 | Member | `member.html?u=Name` | One member's shelf, what they're borrowing now, past loans and their ratings |
 | About | `about.html` | How the club works, when and where, what counts, who we are |
@@ -26,6 +26,7 @@ Every page shares the same header and footer, repeated in each file.
 
 The site only ever **reads** from Baserow. Anything that adds or changes data – joining, borrowing, rating, adding or recommending a book – goes through a public Baserow form, so the site never needs permission to write.
 
+- **Wish list entries** can say where to find a copy, in **Where to find it** (Cheshire libraries, Library ebook or audiobook, Free ebook, Buy, Not sure yet), with an optional web address in **Link**. Only links starting with http:// or https:// are shown. The site lists physical books and legal library or free ebooks only – not shared ebook files.
 - **Catalogue, wish list, borrowings and ratings** are read with a read-only database token. Borrowings also show, on each book, who has it now and how many members are waiting for it; ratings feed the member pages.
 - **Members** are read from a publicly shared Baserow view that shows only safe fields. Emails and phone numbers never reach the site.
 - **Forms** are opened in a new tab. Borrow and Rate pre-fill the book; Adding a book happens on our own page and is submitted directly to the Baserow form.

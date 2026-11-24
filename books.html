@@ -61,16 +61,23 @@
   <main id="main">
     <section class="section container page">
       <div class="page__head">
-        <h1 class="page__title">On the shelves</h1>
+        <h1 class="page__title">Books</h1>
         <a class="section__link" href="add.html">Add a book</a>
       </div>
-      <p class="page__intro">Every book here belongs to a member. Pick one, borrow it and pass it back when you're done.</p>
+      <p class="page__intro">Books on our shelves belong to members: pick one, borrow it and pass it back when you're done. Recommended books aren't in the pot yet – each card says where to find a copy.</p>
+
+      <div class="views" role="group" aria-label="Which books to show">
+        <button type="button" data-view="shelves" aria-pressed="true">On our shelves</button>
+        <button type="button" data-view="recommended" aria-pressed="false">Recommended</button>
+        <button type="button" data-view="all" aria-pressed="false">All</button>
+      </div>
 
       <div class="filters" role="search">
         <label class="filters__search">
           <span class="visually-hidden">Search titles and authors</span>
           <input type="search" id="q" placeholder="Search titles and authors" autocomplete="off">
         </label>
+        <div class="filters__shelf" id="shelf-filters">
         <label><span class="visually-hidden">Genre</span>
           <select id="genre"><option value="">All genres</option></select>
         </label>
@@ -86,11 +93,18 @@
           </select>
         </label>
         <label class="filters__toggle"><input type="checkbox" id="avail"> Available now</label>
+        </div>
       </div>
 
       <p class="count" id="count" aria-live="polite"></p>
       <div class="grid" id="grid"></div>
       <p class="notice" id="notice" hidden></p>
+
+      <div class="recs" id="recs" hidden>
+        <h2 class="recs__title">Recommended – not on our shelves yet</h2>
+        <ul class="wishlist" id="rec-items"></ul>
+        <p class="recs__more"><a href="wishlist.html">Recommend a book</a></p>
+      </div>
     </section>
   </main>
 

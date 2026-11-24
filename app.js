@@ -260,8 +260,18 @@
       `<button type="button" data-open="${b.id}" aria-label="${esc(b.title)}">${coverHtml(b, true, "L")}</button>`).join("");
   }
 
-  function renderWishlist(rows) {
-    const el = $("#wish-items");
+  // Where a recommended book can be found, with an optional link (only http(s) links are used)
+  function whereHtml(r) {
+    const where = single(r["Where to find it"]);
+    const link = (r["Link"] || "").trim();
+    const safe = /^https?:\/\//i.test(link) ? link : "";
+    if (!where && !safe) return "";
+    const label = where || "Find it here";
+    return `<p class="card__where">${safe ? `<a href="${esc(safe)}" target="_blank" rel="noopener">${esc(label)}</a>` : esc(label)}</p>`;
+  }
+
+  function renderWishlist(rows, target) {
+    const el = target || $("#wish-items");
     const stamp = (d) => d ? new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
     const items = rows
       .filter((r) => (r["Book title"] || "").trim())
@@ -280,10 +290,11 @@
             ${r["Author"] ? `<p class="card__author">${esc(r["Author"])}</p>` : ""}
             ${r["Why read it"] ? `<p class="card__why">${esc(r["Why read it"])}</p>` : ""}
             ${by.length ? `<p class="card__by">Recommended by ${esc(by.join(", "))}</p>` : ""}
+            ${whereHtml(r)}
           </div>
         </li>`;
       });
-    el.innerHTML = items.length ? items.join("") : `<li class="empty">Nothing yet – be the first to recommend a book.</li>`;
+    el.innerHTML = items.length ? items.join("") : `<li class="empty">${target ? "No recommended books match." : "Nothing yet – be the first to recommend a book."}</li>`;
   }
 
   function renderMembers(rows) {
@@ -472,6 +483,44 @@
 
     const m = location.hash.match(/^#book-(\d+)$/);
     if (m) openBook(m[1]);
+  }
+
+  // Books page: "On our shelves", "Recommended" (the wish list) or both, with the same search box
+  function initBookViews() {
+    const recs = $("#recs");
+    if (!recs) return;
+    let wish = null;
+    const views = { shelves: [true, false], recommended: [false, true], all: [true, true] };
+    const params = new URLSearchParams(location.search);
+    let view = views[params.get("view")] ? params.get("view") : "shelves";
+    const shelfBits = ["#shelf-filters", "#count", "#grid"];
+    const drawRecs = () => {
+      if (!wish) return;
+      const q = ($("#q") && $("#q").value || "").trim().toLowerCase();
+      const rows = wish.filter((r) => !q || `${r["Book title"] || ""} ${r["Author"] || ""}`.toLowerCase().includes(q));
+      renderWishlist(rows, $("#rec-items"));
+    };
+    const apply = () => {
+      const [shelves, rec] = views[view];
+      shelfBits.forEach((sel) => { const el = $(sel); if (el) el.hidden = !shelves; });
+      recs.hidden = !rec;
+      $$(".views button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === view ? "true" : "false"));
+      if (rec && !wish) {
+        if (!cfg.baserowToken || !cfg.wishListTableId) { wish = []; drawRecs(); return; }
+        $("#rec-items").innerHTML = `<li class="empty">Loading recommendations…</li>`;
+        fetchTable(cfg.wishListTableId).then((rows) => { wish = rows; drawRecs(); })
+          .catch(() => { $("#rec-items").innerHTML = `<li class="empty">We couldn't load the recommendations just now.</li>`; });
+      } else drawRecs();
+    };
+    $$(".views button").forEach((b) => b.addEventListener("click", () => {
+      view = b.dataset.view;
+      const u = new URL(location.href);
+      if (view === "shelves") u.searchParams.delete("view"); else u.searchParams.set("view", view);
+      history.replaceState(null, "", u);
+      apply();
+    }));
+    on("#q", "input", drawRecs);
+    apply();
   }
 
   function loadWishlist() {
@@ -953,6 +1002,7 @@
     loadCounter();
     booksReady = loadBooks();
     loadWishlist();
+    initBookViews();
     loadMembers();
     bindAddPage();
     loadMemberPage();
