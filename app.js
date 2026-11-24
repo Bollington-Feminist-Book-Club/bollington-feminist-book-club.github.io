@@ -539,11 +539,6 @@
       const sf = $("#shelf-filters");
       if (sf) sf.hidden = state.view === "recommended";
       $$(".views button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.view === state.view ? "true" : "false"));
-      // The menu's "Recommended" item lights up for that view
-      $$('.nav a[data-page]').forEach((a) => {
-        const here = a.dataset.page === (state.view === "recommended" ? "wishlist" : "books");
-        if (here) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
-      });
       Promise.resolve(booksReady).then(() => { if ($("#grid") && state.books.length + state.recs.length) renderGrid(); });
     };
     $$(".views button").forEach((b) => b.addEventListener("click", () => {
