@@ -15,6 +15,10 @@ window.BOOKCLUB_CONFIG = {
   // Free, cookie-free visitor and QR-scan counts: sign up at goatcounter.com and put your code here
   // (the "bollingtonbooks" part of bollingtonbooks.goatcounter.com). Leave empty to switch counting off.
   goatcounter: "",
+
+  // Google Books key for covers and synopses when adding a book. It is locked in Google Cloud to this
+  // website and to the Books API only, so it is safe to publish. Leave empty to use Open Library alone.
+  googleBooksKey: "AIzaSyA4DIwI6V7hYhLDKE3UfgYHIjmQs99brFo",
   catalogueTableId: 938797,
   wishListTableId: 938117,     // the token also needs READ on the Wish list table
   borrowingsTableId: 938123,   // member pages: the token needs READ on Borrowings

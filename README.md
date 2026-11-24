@@ -66,6 +66,7 @@ The on-page add form has two traps: a hidden box that only bots fill in, and a m
 | `clubName` | Shown in the header and browser tab |
 | `baserowToken` | Read-only database token (see below) |
 | `catalogueTableId`, `wishListTableId`, `borrowingsTableId`, `ratingsTableId` | Baserow table IDs |
+| `googleBooksKey` | Google Books API key for covers and synopses on Add a book. Created in Google Cloud (project "Bollington Book Club") and restricted to this website and the Books API only, so it is safe in the public code. Without it, Google's shared free allowance runs out and lookups fall back to Open Library alone |
 | `membersViewLink` | Share link of the *Public members view* in the Members table |
 | `forms` | Share links of the five Baserow forms below |
 

@@ -637,7 +637,7 @@
   }
 
   async function fromGoogle(isbn) {
-    const data = await getJson(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+    const data = await getJson(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}${cfg.googleBooksKey ? `&key=${encodeURIComponent(cfg.googleBooksKey)}` : ""}`);
     const v = data && data.items && data.items[0] && data.items[0].volumeInfo;
     if (!v) return null;
     const tmp = document.createElement("div");
