@@ -611,13 +611,13 @@
     const people = await Promise.all(authorKeys.slice(0, 4).map((k) => getJson(`https://openlibrary.org${k}.json`)));
     out.authors = people.filter(Boolean).map((p) => p.name).filter(Boolean);
     // Cover: this edition's own, else the edition's cover id, else any cover on the book's main (work) record
-    const candidates = [`https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`];
-    const ids = [...(ed.covers || []), ...((work && work.covers) || [])].filter((id) => id > 0);
-    ids.slice(0, 3).forEach((id) => candidates.push(`https://covers.openlibrary.org/b/id/${id}-L.jpg?default=false`));
-    out.cover = "";
-    for (const url of candidates) {
-      if (await imageExists(url)) { out.cover = url; break; }
-    }
+    const own = [`https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg?default=false`,
+      ...(ed.covers || []).filter((id) => id > 0).slice(0, 2).map((id) => `https://covers.openlibrary.org/b/id/${id}-L.jpg?default=false`)];
+    const any = ((work && work.covers) || []).filter((id) => id > 0).slice(0, 2).map((id) => `https://covers.openlibrary.org/b/id/${id}-L.jpg?default=false`);
+    out.cover = ""; out.workCover = "";
+    for (const url of own) { if (await imageExists(url)) { out.cover = url; break; } }
+    // A cover from another edition of the same book – only used if nothing better turns up
+    if (!out.cover) for (const url of any) { if (await imageExists(url)) { out.workCover = url; break; } }
     return out;
   }
 
@@ -634,8 +634,14 @@
       pages: v.pageCount || null,
       synopsis: tmp.textContent.trim(),
       language: LANGS[v.language] || v.language || "",
-      cover: img ? img.replace(/^http:/, "https:").replace("&edge=curl", "") : ""
+      cover: gCover(img)
     };
+  }
+
+  // Google's thumbnails are small; fife asks for a bigger version of the same image
+  function gCover(img) {
+    if (!img) return "";
+    return img.replace(/^http:/, "https:").replace("&edge=curl", "").replace(/&fife=[^&]*/, "") + "&fife=w480-h720";
   }
 
   async function lookupIsbn(isbn) {
@@ -650,7 +656,7 @@
       synopsis: (b.synopsis && b.synopsis.length > (a.synopsis || "").length ? b.synopsis : a.synopsis) || "",
       language: a.language || b.language || "",
       format: a.format || "",
-      cover: a.cover || b.cover || "",
+      cover: b.cover || a.cover || a.workCover || "",
       sources: [ol && "Open Library", g && "Google Books"].filter(Boolean)
     };
   }
@@ -945,7 +951,7 @@
       const book = await lookupIsbn(isbn);
       // A picked edition fills any gaps the ISBN lookup left
       if (book && picked) {
-        if (!book.cover && picked.thumb) book.cover = picked.thumb;
+        if (picked.thumb) book.cover = picked.thumb;
         if (!book.pages && picked.pages) book.pages = picked.pages;
         if (!book.authors.length) book.authors = picked.authors;
       }
@@ -1001,7 +1007,7 @@
       const img = v.imageLinks && (v.imageLinks.thumbnail || v.imageLinks.smallThumbnail);
       return { isbn, title: v.title || "", authors: v.authors || [], publisher: v.publisher || "",
         year: (v.publishedDate || "").slice(0, 4), pages: v.pageCount || null,
-        thumb: img ? img.replace(/^http:/, "https:").replace("&edge=curl", "") : "" };
+        thumb: gCover(img) };
     }).filter((e) => e.isbn && !seen.has(e.isbn) && seen.add(e.isbn));
     if (!eds.length) {
       const o = await getJson(`https://openlibrary.org/search.json?title=${encodeURIComponent(q)}&fields=title,author_name,isbn,publisher,first_publish_year,cover_i&limit=10`);
